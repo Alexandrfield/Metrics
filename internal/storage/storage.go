@@ -8,6 +8,12 @@ import (
 type TypeGauge float64
 type TypeCounter int64
 
+type MemStorageI interface {
+	AddGauge(name string, d string) bool
+	GetGauge(name string) (TypeGauge, bool)
+	AddCounter(name string, d string) bool
+	GetCounter(name string) (TypeCounter, bool)
+}
 type MemStorage struct {
 	gaugeData   map[string]TypeGauge
 	counterData map[string]TypeCounter

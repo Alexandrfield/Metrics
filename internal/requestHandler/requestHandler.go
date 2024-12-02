@@ -6,7 +6,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-var globalMemStorage *storage.MemStorage = nil
+var globalMemStorage storage.MemStorageI = nil
 
 func HandleRequest(url []string) bool {
 	status := false
