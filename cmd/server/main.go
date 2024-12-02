@@ -23,16 +23,21 @@ func defaultAnswer(res http.ResponseWriter, req *http.Request) {
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusMethodNotAllowed
+	fmt.Printf("req:%v; req.Method:%s\n", req, req.Method)
 	if req.Method == http.MethodPost {
 		url, st := parseURL(req)
-		res.WriteHeader(st)
-		fmt.Printf("res.WriteHeader:%d\n", st)
+		fmt.Printf("parse st:%d, url:%v\n", st, url)
 		if st == http.StatusOK {
-			handl.HandleRequest(url)
+			fmt.Printf("try save url\n")
+			if !handl.HandleRequest(url) {
+				statusH = http.StatusBadRequest
+			} else {
+				statusH = http.StatusOK
+			}
 		}
 		return
 	}
-
+	fmt.Printf("res.WriteHeader:%d\n", statusH)
 	res.WriteHeader(statusH)
 }
 

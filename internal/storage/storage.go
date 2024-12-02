@@ -17,23 +17,25 @@ func CreateMemStorage() *MemStorage {
 	return &MemStorage{gaugeData: make(map[string]TypeGauge), counterData: make(map[string]TypeCounter)}
 }
 
-func (st *MemStorage) AddGauge(name string, d string) {
+func (st *MemStorage) AddGauge(name string, d string) bool {
 	value, err := strconv.ParseFloat(d, 64)
 	if err != nil {
 		fmt.Printf("error parse gauge; err: %s\n", err)
-		return
+		return false
 	}
 	st.gaugeData[name] = TypeGauge(value)
+	return true
 }
-func (st *MemStorage) AddCounter(name string, d string) {
+func (st *MemStorage) AddCounter(name string, d string) bool {
 	value, err := strconv.Atoi(d)
 	if err != nil {
 		fmt.Printf("error parse counter; err: %s\n", err)
-		return
+		return false
 	}
 	val, ok := st.counterData[name]
 	if ok {
 		val = 0
 	}
 	st.counterData[name] = val + TypeCounter(value)
+	return true
 }
