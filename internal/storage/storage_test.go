@@ -12,22 +12,22 @@ func TestAddGaugePositiv(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  string
-		expect TypeGauge
+		expect string
 	}{
 		{
 			name:   "test1",
 			value:  "24",
-			expect: 24,
+			expect: "24.000000",
 		},
 		{
 			name:   "test2",
 			value:  "-24",
-			expect: -24,
+			expect: "-24.000000",
 		},
 		{
 			name:   "test3",
 			value:  "24.5",
-			expect: 24.5,
+			expect: "24.500000",
 		},
 	}
 
@@ -55,22 +55,22 @@ func TestAddCounterPositiv(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  string
-		expect TypeCounter
+		expect string
 	}{
 		{
 			name:   "test1",
 			value:  "24",
-			expect: 24,
+			expect: "24",
 		},
 		{
 			name:   "test2",
 			value:  "-24",
-			expect: -24,
+			expect: "-24",
 		},
 		{
 			name:   "test3",
 			value:  "0",
-			expect: 0,
+			expect: "0",
 		},
 	}
 
@@ -90,4 +90,58 @@ func TestAddCounterNegativ(t *testing.T) {
 	memStorage.AddCounter("test1", "23")
 	_, ok := memStorage.GetCounter("test2")
 	assert.Equal(t, ok, false)
+}
+
+func TesGetAllMetricName(t *testing.T) {
+	memStorage := CreateMemStorage()
+
+	testsGauge := []struct {
+		name  string
+		value string
+	}{
+		{
+			name:  "testsGauge1",
+			value: "24",
+		},
+		{
+			name:  "testsGauge2",
+			value: "-24",
+		},
+		{
+			name:  "testsGauge3",
+			value: "0",
+		},
+	}
+	testsCounter := []struct {
+		name  string
+		value string
+	}{
+		{
+			name:  "testCounter1",
+			value: "24",
+		},
+		{
+			name:  "testCounter2",
+			value: "-24",
+		},
+		{
+			name:  "testCounter3",
+			value: "0",
+		},
+	}
+	var expected []string
+	var actual []string
+	for _, tt := range testsGauge {
+		memStorage.AddGauge(tt.name, tt.value)
+		expected = append(expected, tt.name)
+	}
+	for _, tt := range testsCounter {
+		memStorage.AddCounter(tt.name, tt.value)
+		expected = append(expected, tt.name)
+	}
+
+	keysCounter, keysGauge := memStorage.GetAllMetricName()
+	actual = append(actual, keysCounter...)
+	actual = append(actual, keysGauge...)
+	assert.ElementsMatch(t, actual, expected)
 }
