@@ -11,7 +11,6 @@ import (
 func TestUpdateValue(t *testing.T) {
 	type want struct {
 		code        int
-		response    string
 		contentType string
 	}
 	tests := []struct {
@@ -24,7 +23,6 @@ func TestUpdateValue(t *testing.T) {
 			request: "/update/counter/test/1",
 			want: want{
 				code:        200,
-				response:    `{"status":"ok"}`,
 				contentType: "plain/text",
 			},
 		},
@@ -33,7 +31,6 @@ func TestUpdateValue(t *testing.T) {
 			request: "/update/gauge/test/4.4",
 			want: want{
 				code:        200,
-				response:    `{"status":"ok"}`,
 				contentType: "plain/text",
 			},
 		},
@@ -42,7 +39,6 @@ func TestUpdateValue(t *testing.T) {
 			request: "/update/counter/5",
 			want: want{
 				code:        http.StatusNotFound,
-				response:    `{"status":"ok"}`,
 				contentType: "plain/text",
 			},
 		},
@@ -51,7 +47,6 @@ func TestUpdateValue(t *testing.T) {
 			request: "/update/gauge/5",
 			want: want{
 				code:        http.StatusNotFound,
-				response:    `{"status":"ok"}`,
 				contentType: "plain/text",
 			},
 		},
@@ -63,7 +58,7 @@ func TestUpdateValue(t *testing.T) {
 
 			updateValue(w, request)
 			result := w.Result()
-
+			defer result.Body.Close()
 			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
 	}
@@ -74,7 +69,7 @@ func TestDefaultAnswer(t *testing.T) {
 
 	defaultAnswer(w, request)
 	result := w.Result()
-
+	defer result.Body.Close()
 	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 
 }
@@ -103,7 +98,7 @@ func TestParserURL(t *testing.T) {
 
 			updateValue(w, request)
 			result := w.Result()
-
+			defer result.Body.Close()
 			assert.Equal(t, tt.resStatus, result.StatusCode)
 		})
 	}
