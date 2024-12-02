@@ -30,6 +30,7 @@ func defaultAnswer(res http.ResponseWriter, req *http.Request) {
 }
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("updateValue\n")
 	statusH := http.StatusMethodNotAllowed
 	fmt.Printf("req:%v; req.Method:%s\n", req, req.Method)
 
@@ -46,6 +47,7 @@ func updateValue(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(statusH)
 }
 func getValue(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("GetValue\n")
 	statusH := http.StatusMethodNotAllowed
 
 	var url []string
@@ -66,6 +68,7 @@ func getValue(res http.ResponseWriter, req *http.Request) {
 }
 
 func getAllData(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("getAllData\n")
 	allValues := handl.HandleAllValue()
 	page := `
 <html> 
@@ -84,16 +87,17 @@ func getAllData(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(page))
 }
+
 func main() {
 	router := chi.NewRouter()
-
-	router.Post(`/update/gauge/`, updateValue)
-	router.Post(`/update/counter/`, updateValue)
-	router.Post(`/update/`, defaultAnswer)
 	router.Get(`/value/`, getValue)
 	router.Get(`/`, getAllData)
 
-	err := http.ListenAndServe(`127.0.0.1:8080`, router)
+	router.Post(`/update/*`, updateValue)
+	//router.Post(`/update/*`, updateValue)
+	router.Post(`/update/`, defaultAnswer)
+
+	err := http.ListenAndServe(`:8080`, router)
 	if err != nil {
 		panic(err)
 	}

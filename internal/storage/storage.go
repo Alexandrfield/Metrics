@@ -64,11 +64,11 @@ func (st *MemStorage) GetCounter(name string) (string, bool) {
 }
 func (st *MemStorage) GetAllMetricName() ([]string, []string) {
 	var allGaugeKeys []string
-	for key, _ := range st.gaugeData {
+	for key := range st.gaugeData {
 		allGaugeKeys = append(allGaugeKeys, key)
 	}
 	var allCounterKeys []string
-	for key, _ := range st.counterData {
+	for key := range st.counterData {
 		allCounterKeys = append(allCounterKeys, key)
 	}
 	return allGaugeKeys, allCounterKeys
