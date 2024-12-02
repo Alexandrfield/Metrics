@@ -50,23 +50,27 @@ func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
 	metrics["TotalAlloc"] = storage.TypeGauge(rtm.TotalAlloc)
 	metrics["RandomValue"] = storage.TypeGauge(rand.Float64())
 }
-func reportMetrics(client *http.Client, metricsGauge map[string]storage.TypeGauge, metricsCounter map[string]storage.TypeCounter) {
+func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
+	metrics["PollCount"] = metrics["PollCount"] + 1
+}
+func prepareReportMetrics(metricsGauge map[string]storage.TypeGauge, metricsCounter map[string]storage.TypeCounter) []string {
 
 	dataMetricForReport := make([]string, 0)
 	for key, value := range metricsGauge {
-		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("gauge/%s/%s", key, value))
+		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("http://%s/update/gauge/%s/%v", globalServerAdderess, key, value))
 	}
 	for key, value := range metricsCounter {
-		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("counter/%s/%s", key, value))
+		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("http://%s/update/counter/%s/%v", globalServerAdderess, key, value))
 	}
-	go func() {
-		for _, metric := range dataMetricForReport {
-			reportMetric(client, metric)
-		}
-	}()
+	return dataMetricForReport
 }
-func reportMetric(client *http.Client, metric string) {
-	url := fmt.Sprintf("http://%s/update/%s", globalServerAdderess, metric)
+
+func reportMetrics(client *http.Client, dataMetricForReport []string) {
+	for _, metric := range dataMetricForReport {
+		reportMetric(client, metric)
+	}
+}
+func reportMetric(client *http.Client, url string) {
 	req, err := http.NewRequest(
 		http.MethodPost, url, nil,
 	)
@@ -98,9 +102,10 @@ func metricsWatcher(client *http.Client, done chan struct{}) {
 			return
 		case <-tickerPoolInterval.C:
 			updateGaugeMetrics(metricsGauge)
-			metricsCounter["PollCount"] = metricsCounter["PollCount"] + 1
+			updateCounterMetrics(metricsCounter)
 		case <-tickerReportInterval.C:
-			reportMetrics(client, metricsGauge, metricsCounter)
+			metricsReport := prepareReportMetrics(metricsGauge, metricsCounter)
+			go reportMetrics(client, metricsReport)
 		}
 	}
 }

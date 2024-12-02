@@ -26,6 +26,10 @@ func (st *MemStorage) AddGauge(name string, d string) bool {
 	st.gaugeData[name] = TypeGauge(value)
 	return true
 }
+func (st *MemStorage) GetGauge(name string) (TypeGauge, bool) {
+	val, ok := st.gaugeData[name]
+	return val, ok
+}
 func (st *MemStorage) AddCounter(name string, d string) bool {
 	value, err := strconv.Atoi(d)
 	if err != nil {
@@ -38,4 +42,8 @@ func (st *MemStorage) AddCounter(name string, d string) bool {
 	}
 	st.counterData[name] = val + TypeCounter(value)
 	return true
+}
+func (st *MemStorage) GetCounter(name string) (TypeCounter, bool) {
+	val, ok := st.counterData[name]
+	return val, ok
 }
