@@ -23,7 +23,7 @@ func defaultAnswer(res http.ResponseWriter, req *http.Request) {
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusMethodNotAllowed
-	if req.Method != http.MethodPost {
+	if req.Method == http.MethodPost {
 		url, st := parseURL(req)
 		res.WriteHeader(st)
 		fmt.Printf("res.WriteHeader:%d\n", st)
