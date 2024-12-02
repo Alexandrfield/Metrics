@@ -17,7 +17,8 @@ func parseURL(req *http.Request) ([]string, int) {
 	return url, http.StatusOK
 }
 func defaultAnswer(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("defaultAnswer\n")
+	fmt.Printf("defaultAnswer. req:%v;\n", req)
+	fmt.Printf("defaultAnswer: res.WriteHeader:%d\n", http.StatusNotFound)
 	res.WriteHeader(http.StatusNotFound)
 }
 
