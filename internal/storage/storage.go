@@ -20,7 +20,7 @@ func CreateMemStorage() *MemStorage {
 func (st *MemStorage) AddGauge(name string, d string) {
 	value, err := strconv.ParseFloat(d, 64)
 	if err != nil {
-		fmt.Printf("error parse gauge; err: %w\n", err)
+		fmt.Printf("error parse gauge; err: %s\n", err)
 		return
 	}
 	st.gaugeData[name] = TypeGauge(value)
@@ -28,7 +28,7 @@ func (st *MemStorage) AddGauge(name string, d string) {
 func (st *MemStorage) AddCounter(name string, d string) {
 	value, err := strconv.Atoi(d)
 	if err != nil {
-		fmt.Printf("error parse counter; err: %w\n", err)
+		fmt.Printf("error parse counter; err: %s\n", err)
 		return
 	}
 	val, ok := st.counterData[name]

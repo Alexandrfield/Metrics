@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	handl "github.com/Alexandrfield/Metrics/internal/requestHandler"
 )
 
-func parseUrl(req *http.Request) ([]string, int) {
+func parseURL(req *http.Request) ([]string, int) {
 	url := strings.Split(req.URL.String(), "/")
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>, Content-Type: text/plain
 	if len(url) != 5 {
@@ -16,18 +17,22 @@ func parseUrl(req *http.Request) ([]string, int) {
 	return url, http.StatusOK
 }
 func defaultAnswer(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("defaultAnswer\n")
 	res.WriteHeader(http.StatusNotFound)
 }
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusMethodNotAllowed
 	if req.Method != http.MethodPost {
-		url, st := parseUrl(req)
+		url, st := parseURL(req)
 		res.WriteHeader(st)
+		fmt.Printf("res.WriteHeader:%d\n", st)
 		if st == http.StatusOK {
 			handl.HandleRequest(url)
 		}
+		return
 	}
+
 	res.WriteHeader(statusH)
 }
 
