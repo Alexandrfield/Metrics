@@ -18,8 +18,8 @@ func parseURL(req *http.Request) ([]string, int) {
 }
 func defaultAnswer(res http.ResponseWriter, req *http.Request) {
 	fmt.Printf("defaultAnswer. req:%v;\n", req)
-	fmt.Printf("defaultAnswer: res.WriteHeader:%d\n", http.StatusNotFound)
-	res.WriteHeader(http.StatusNotFound)
+	fmt.Printf("defaultAnswer: res.WriteHeader:%d\n", http.StatusNotImplemented)
+	res.WriteHeader(http.StatusNotImplemented)
 }
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
