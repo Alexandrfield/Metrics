@@ -90,7 +90,7 @@ func getAllData(res http.ResponseWriter, req *http.Request) {
 
 func main() {
 	router := chi.NewRouter()
-	router.Get(`/value/`, getValue)
+	router.Get(`/value/*`, getValue)
 	router.Get(`/`, getAllData)
 
 	router.Post(`/update/*`, updateValue)
