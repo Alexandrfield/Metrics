@@ -30,7 +30,6 @@ func defaultAnswer(res http.ResponseWriter, req *http.Request) {
 }
 
 func updateValue(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("updateValue\n")
 	statusH := http.StatusMethodNotAllowed
 	fmt.Printf("req:%v; req.Method:%s\n", req, req.Method)
 
@@ -47,7 +46,6 @@ func updateValue(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(statusH)
 }
 func getValue(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("GetValue\n")
 	statusH := http.StatusMethodNotAllowed
 
 	var url []string
@@ -55,6 +53,7 @@ func getValue(res http.ResponseWriter, req *http.Request) {
 	if statusH == http.StatusOK {
 		val, st := handl.HandleGetValue(url)
 		if st {
+			fmt.Printf("return value:%s\n", val)
 			res.WriteHeader(statusH)
 			res.Write([]byte(val))
 			return
