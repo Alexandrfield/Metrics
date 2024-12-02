@@ -118,7 +118,7 @@ func main() {
 	done := make(chan struct{})
 	go metricsWatcher(&client, done)
 	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	<-osSignals
 	close(done)
 	time.Sleep(1 * time.Second)
