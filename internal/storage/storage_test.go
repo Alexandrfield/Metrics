@@ -17,17 +17,17 @@ func TestAddGaugePositiv(t *testing.T) {
 		{
 			name:   "test1",
 			value:  "24",
-			expect: "24.000000",
+			expect: "24.000",
 		},
 		{
 			name:   "test2",
 			value:  "-24",
-			expect: "-24.000000",
+			expect: "-24.000",
 		},
 		{
 			name:   "test3",
 			value:  "24.5",
-			expect: "24.500000",
+			expect: "24.500",
 		},
 	}
 
