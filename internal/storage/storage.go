@@ -37,7 +37,7 @@ func (st *MemStorage) GetGauge(name string) (string, bool) {
 	val, ok := st.gaugeData[name]
 	res := ""
 	if ok {
-		res = fmt.Sprintf("%.3f", val)
+		res = strconv.FormatFloat(float64(val), 'f', -1, 64)
 	}
 	return res, ok
 }
