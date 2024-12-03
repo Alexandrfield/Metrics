@@ -88,15 +88,15 @@ func getAllData(res http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	parseFlags()
 	router := chi.NewRouter()
 	router.Get(`/value/*`, getValue)
 	router.Get(`/`, getAllData)
 
 	router.Post(`/update/*`, updateValue)
-	//router.Post(`/update/*`, updateValue)
 	router.Post(`/update/`, defaultAnswer)
 
-	err := http.ListenAndServe(`:8080`, router)
+	err := http.ListenAndServe(globalServerAdderess, router)
 	if err != nil {
 		panic(err)
 	}

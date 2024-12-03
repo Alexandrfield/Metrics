@@ -14,10 +14,6 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-var globalPollIntervalSecond int = 2
-var globalReportIntervalSecond int = 10
-var globalServerAdderess string = "127.0.0.1:8080"
-
 func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
@@ -110,7 +106,7 @@ func metricsWatcher(client *http.Client, done chan struct{}) {
 	}
 }
 func main() {
-
+	parseFlags()
 	client := http.Client{
 		Timeout: time.Second * 1, // интервал ожидания: 1 секунда
 	}
