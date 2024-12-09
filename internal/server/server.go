@@ -41,8 +41,10 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	}
 	switch metricType {
 	case "counter":
+		log.Printf("counter -> metricName:%s\n", metricName)
 		res, err = rep.LocalStorage.GetCounter(metricName)
 	case "gauge":
+		log.Printf("gauge -> metricName:%s\n", metricName)
 		res, err = rep.LocalStorage.GetGauge(metricName)
 	default:
 		err = fmt.Errorf("unknown type %s; err:%w", metricType, ErrNotImplementedIssue)

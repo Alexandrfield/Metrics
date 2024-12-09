@@ -107,7 +107,7 @@ func TestAddCounterNegativ(t *testing.T) {
 	assert.Equal(t, check, true)
 }
 
-func TesGetAllMetricName(t *testing.T) {
+func TestGetAllMetricName(t *testing.T) {
 	memStorage := CreateMemStorage()
 
 	testsGauge := []struct {
