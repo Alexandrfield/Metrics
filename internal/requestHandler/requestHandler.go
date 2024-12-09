@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"gvisor.dev/gvisor/pkg/log"
+	"log"
 )
 
 type MetricsStorage interface {
@@ -24,7 +24,6 @@ func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
 
 func parseURL(req *http.Request) ([]string, int) {
 	url := strings.Split(req.URL.String(), "/")
-	log.Debugf("parse len():%d, url:%v\n", len(url), url)
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>, Content-Type: text/plain
 	if url[1] == "update" && len(url) != 5 {
 		return []string{}, http.StatusNotFound
@@ -36,25 +35,24 @@ func parseURL(req *http.Request) ([]string, int) {
 	return url, http.StatusOK
 }
 func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Request) {
-	log.Debugf("defaultAnswer. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
+	log.Printf("defaultAnswer. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusMethodNotAllowed
-	log.Debugf("req:%v; req.Method:%s\n", req, req.Method)
 
 	var url []string
 	url, statusH = parseURL(req)
 	if statusH == http.StatusOK {
 		err := rep.memStorage.SetValue(url[3], url[3], url[4])
 		if err != nil {
-			log.Infof("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[3], url[3], url[4], err)
+			log.Printf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[3], url[3], url[4], err)
 			statusH = http.StatusBadRequest
 		}
 	}
 
-	log.Debugf("res.WriteHeader:%d\n", statusH)
+	log.Printf("res.WriteHeader:%d\n", statusH)
 	res.WriteHeader(statusH)
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
@@ -69,19 +67,19 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 			res.Write([]byte(val))
 			return
 		} else {
-			log.Infof("issue for GetValue type:%s; name%s; err:%s\n", url[3], url[3], err)
+			log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[3], url[3], err)
 			statusH = http.StatusNotFound
 		}
 	}
 
-	log.Debugf("res.WriteHeader:%d\n", statusH)
+	log.Printf("res.WriteHeader:%d\n", statusH)
 	res.WriteHeader(statusH)
 }
 
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()
 	if err == nil {
-		log.Infof("issue for GetAllData. err:%s\n", err)
+		log.Printf("issue for GetAllData. err:%s\n", err)
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -3,9 +3,10 @@ package server
 import (
 	"fmt"
 
+	"log"
+
 	"github.com/Alexandrfield/Metrics/internal/customerrors"
 	"github.com/Alexandrfield/Metrics/internal/storage"
-	"gvisor.dev/gvisor/pkg/log"
 )
 
 type MetricRepository struct {
@@ -14,9 +15,9 @@ type MetricRepository struct {
 
 func (rep *MetricRepository) SetValue(metricType string, metricName string, metricValue string) error {
 	var err error
-	log.Debugf("metricType:%s; metricValue:%s\n", metricType, metricValue)
+	log.Printf("metricType:%s; metricValue:%s\n", metricType, metricValue)
 	if rep.LocalStorage == nil {
-		log.Infof("MetricRepository has not been initialize! Create default MemStorage\n")
+		log.Printf("MetricRepository has not been initialize! Create default MemStorage\n")
 		rep.LocalStorage = storage.CreateMemStorage()
 	}
 	switch metricType {
