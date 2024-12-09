@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Alexandrfield/Metrics/internal/customErrors"
+	"github.com/Alexandrfield/Metrics/internal/customerrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +48,7 @@ func TestAddGaugeNegativ(t *testing.T) {
 
 	memStorage.AddGauge("test1", "23")
 	_, err := memStorage.GetGauge("test2")
-	check := errors.Is(err, customErrors.ErrMetricNotExistIssue)
+	check := errors.Is(err, customerrors.ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
 }
 
@@ -93,7 +93,7 @@ func TestAddCounterNegativ(t *testing.T) {
 	memStorage.AddCounter("test1", "23")
 	_, err := memStorage.GetCounter("test2")
 
-	check := errors.Is(err, customErrors.ErrMetricNotExistIssue)
+	check := errors.Is(err, customerrors.ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
 }
 

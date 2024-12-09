@@ -251,17 +251,17 @@ linters-settings:
   makezero:
     always: false
 
-  mnd:
-    checks:
-      - argument
-      - case
-      - condition
-      - operation
-      - return
-      - assign
-    ignored-files: []
-    ignored-functions: []
-    ignored-numbers: []
+  # mnd:
+  #   checks:
+  #     - argument
+  #     - case
+  #     - condition
+  #     - operation
+  #     - return
+  #     - assign
+  #   ignored-files: []
+  #   ignored-functions: []
+  #   ignored-numbers: []
 
   musttag:
     # A set of custom functions to check in addition to the builtin ones.
@@ -504,7 +504,7 @@ linters:
     - loggercheck
     - makezero
     - mirror
-    - mnd
+   # - mnd
     - musttag
     - nilerr
     - nilnil

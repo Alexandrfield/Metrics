@@ -1,8 +1,8 @@
 module github.com/Alexandrfield/Metrics
 
-go 1.23.1
+go 1.22
 
-toolchain go1.23.4
+toolchain go1.22
 
 require (
 	github.com/go-chi/chi/v5 v5.1.0

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Alexandrfield/Metrics/internal/customErrors"
+	"github.com/Alexandrfield/Metrics/internal/customerrors"
 )
 
 type TypeGauge float64
@@ -22,7 +22,7 @@ func CreateMemStorage() *MemStorage {
 func (st *MemStorage) AddGauge(name string, raw string) error {
 	value, err := strconv.ParseFloat(raw, 64)
 	if err != nil {
-		return fmt.Errorf("Error parse Gauge type. Value:%s; err:%w", raw, customErrors.ErrCantParseDataIssue)
+		return fmt.Errorf("Error parse Gauge type. Value:%s; err:%w", raw, customerrors.ErrCantParseDataIssue)
 	}
 	st.gaugeData[name] = TypeGauge(value)
 	return nil
@@ -30,14 +30,14 @@ func (st *MemStorage) AddGauge(name string, raw string) error {
 func (st *MemStorage) GetGauge(name string) (string, error) {
 	val, ok := st.gaugeData[name]
 	if !ok {
-		return "", fmt.Errorf("Can't find Gauge metric with name:%s;err:%w", name, customErrors.ErrMetricNotExistIssue)
+		return "", fmt.Errorf("Can't find Gauge metric with name:%s;err:%w", name, customerrors.ErrMetricNotExistIssue)
 	}
 	return strconv.FormatFloat(float64(val), 'f', -1, 64), nil
 }
 func (st *MemStorage) AddCounter(name string, raw string) error {
 	value, err := strconv.Atoi(raw)
 	if err != nil {
-		return fmt.Errorf("Error parse Counter type. Value:%s; err:%w", raw, customErrors.ErrCantParseDataIssue)
+		return fmt.Errorf("Error parse Counter type. Value:%s; err:%w", raw, customerrors.ErrCantParseDataIssue)
 	}
 	val, ok := st.counterData[name]
 	if !ok {
@@ -49,7 +49,7 @@ func (st *MemStorage) AddCounter(name string, raw string) error {
 func (st *MemStorage) GetCounter(name string) (string, error) {
 	val, ok := st.counterData[name]
 	if !ok {
-		return "", fmt.Errorf("Can't find Counter metric with name:%s;err:%w", name, customErrors.ErrMetricNotExistIssue)
+		return "", fmt.Errorf("Can't find Counter metric with name:%s;err:%w", name, customerrors.ErrMetricNotExistIssue)
 	}
 	return strconv.Itoa(int(val)), nil
 }

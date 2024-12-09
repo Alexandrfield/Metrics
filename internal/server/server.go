@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/Alexandrfield/Metrics/internal/customErrors"
+	"github.com/Alexandrfield/Metrics/internal/customerrors"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 	"gvisor.dev/gvisor/pkg/log"
 )
@@ -32,7 +32,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	var err error
 	res := ""
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customErrors.ErrMetricNotExistIssue)
+		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customerrors.ErrMetricNotExistIssue)
 	}
 	switch metricType {
 	case "counter":
@@ -46,7 +46,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 func (rep *MetricRepository) GetAllValue() ([]string, error) {
 	var res []string
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customErrors.ErrMetricNotExistIssue)
+		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customerrors.ErrMetricNotExistIssue)
 	}
 	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
 	for i := 0; i < len(allGaugeKeys); i++ {
