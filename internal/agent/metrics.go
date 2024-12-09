@@ -103,7 +103,7 @@ func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
 			updateCounterMetrics(metricsCounter)
 		case <-tickerReportInterval.C:
 			metricsReport := prepareReportMetrics(config.ServerAdderess, metricsGauge, metricsCounter)
-			go reportMetrics(client, metricsReport)
+			reportMetrics(client, metricsReport)
 		}
 	}
 }
