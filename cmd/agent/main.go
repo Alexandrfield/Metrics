@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,6 +19,7 @@ func main() {
 
 	done := make(chan struct{})
 	go agent.MetricsWatcher(agentConfig, &client, done)
+	log.Println("Agent stated")
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	<-osSignals

@@ -24,6 +24,7 @@ func main() {
 	router.Post(`/update/*`, servHandler.UpdateValue)
 	router.Post(`/update/`, servHandler.DefaultAnswer)
 
+	log.Println("Server stated")
 	err := http.ListenAndServe(config.ServerAdderess, router)
 	if err != nil {
 		log.Fatal("Unexpected error. err:%w", err)
