@@ -1,68 +1,108 @@
 package requesthandler
 
 import (
-	"fmt"
+	"html/template"
+	"net/http"
+	"strings"
 
-	"github.com/Alexandrfield/Metrics/internal/storage"
+	"gvisor.dev/gvisor/pkg/log"
 )
 
-type CommonMemStorage interface {
-	AddGauge(name string, d string) bool
-	GetGauge(name string) (string, bool)
-	AddCounter(name string, d string) bool
-	GetCounter(name string) (string, bool)
-	GetAllMetricName() ([]string, []string)
+type MetricsStorage interface {
+	SetValue(metricType string, metricName string, metricValue string) error
+	GetValue(metricType string, metricName string) (string, error)
+	GetAllValue() ([]string, error)
 }
 
-type Repository struct {
-	memStorage CommonMemStorage
+type MetricServer struct {
+	memStorage MetricsStorage
 }
 
-func CreateHandlerRepository(stor CommonMemStorage) *Repository {
-	return &Repository{memStorage: stor}
+func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
+	return &MetricServer{memStorage: stor}
 }
 
-func (rep *Repository) HandleRequest(url []string) bool {
-	status := false
-	fmt.Printf("url:%v\n", url)
-	if rep.memStorage == nil {
-		globalMemStorage = storage.CreateMemStorage()
+func parseURL(req *http.Request) ([]string, int) {
+	url := strings.Split(req.URL.String(), "/")
+	log.Debugf("parse len():%d, url:%v\n", len(url), url)
+	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>, Content-Type: text/plain
+	if url[1] == "update" && len(url) != 5 {
+		return []string{}, http.StatusNotFound
 	}
-	switch url[2] {
-	case "counter":
-		status = globalMemStorage.AddCounter(url[3], url[4])
-	case "gauge":
-		status = globalMemStorage.AddGauge(url[3], url[4])
+	//expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
+	if url[1] == "value" && len(url) < 4 {
+		return []string{}, http.StatusBadRequest
 	}
-	return status
+	return url, http.StatusOK
 }
-func HandleGetValue(url []string) (string, bool) {
-	status := false
-	res := ""
-	if globalMemStorage == nil {
-		return "", false
-	}
-	switch url[2] {
-	case "counter":
-		res, status = globalMemStorage.GetCounter(url[3])
-	case "gauge":
-		res, status = globalMemStorage.GetGauge(url[3])
-	}
-	return res, status
+func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Request) {
+	log.Debugf("defaultAnswer. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
+	res.WriteHeader(http.StatusNotImplemented)
 }
-func HandleAllValue() []string {
-	var res []string
-	if globalMemStorage == nil {
-		return res
+
+func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+	statusH := http.StatusMethodNotAllowed
+	log.Debugf("req:%v; req.Method:%s\n", req, req.Method)
+
+	var url []string
+	url, statusH = parseURL(req)
+	if statusH == http.StatusOK {
+		err := rep.memStorage.SetValue(url[3], url[3], url[4])
+		if err != nil {
+			log.Infof("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[3], url[3], url[4], err)
+			statusH = http.StatusBadRequest
+		}
 	}
-	allGaugeKeys, allCounterKeys := globalMemStorage.GetAllMetricName()
-	for i := 0; i < len(allGaugeKeys); i++ {
-		t, _ := globalMemStorage.GetGauge(allGaugeKeys[i])
-		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allGaugeKeys[i], t))
+
+	log.Debugf("res.WriteHeader:%d\n", statusH)
+	res.WriteHeader(statusH)
+}
+func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
+	statusH := http.StatusMethodNotAllowed
+
+	var url []string
+	url, statusH = parseURL(req)
+	if statusH == http.StatusOK {
+		val, err := rep.memStorage.GetValue(url[2], url[3])
+		if err != nil {
+			res.WriteHeader(statusH)
+			res.Write([]byte(val))
+			return
+		} else {
+			log.Infof("issue for GetValue type:%s; name%s; err:%s\n", url[3], url[3], err)
+			statusH = http.StatusNotFound
+		}
 	}
-	for i := 0; i < len(allCounterKeys); i++ {
-		t, _ := globalMemStorage.GetGauge(allCounterKeys[i])
-		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allCounterKeys[i], t))
+
+	log.Debugf("res.WriteHeader:%d\n", statusH)
+	res.WriteHeader(statusH)
+}
+
+func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
+	allValues, err := rep.memStorage.GetAllValue()
+	if err == nil {
+		log.Infof("issue for GetAllData. err:%s\n", err)
+		res.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	return res
+	all_values_template := `
+<html> 
+   <head> 
+   </head> 
+   <body> 
+	all metrics: 
+		{{ range .}}{{.}}, {{ end }}
+   </body> 
+</html>
+`
+	ready_template, err := template.New("templ").Parse(all_values_template)
+
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("content-type", "Content-Type: text/html; charset=utf-8")
+	res.WriteHeader(http.StatusOK)
+	ready_template.Execute(res, allValues)
 }

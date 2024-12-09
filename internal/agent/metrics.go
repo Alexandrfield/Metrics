@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/storage"
+	"gvisor.dev/gvisor/pkg/log"
 )
 
 func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
@@ -54,6 +55,7 @@ func prepareReportMetrics(serverAdderess string, metricsGauge map[string]storage
 	}
 	for key, value := range metricsCounter {
 		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value))
+		metricsCounter[key] = 0
 	}
 	return dataMetricForReport
 }
@@ -68,19 +70,19 @@ func reportMetric(client *http.Client, url string) {
 		http.MethodPost, url, nil,
 	)
 	if err != nil {
-		fmt.Printf("http.NewRequest. err: %s\n", err)
+		log.Infof("http.NewRequest. err: %s\n", err)
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("http.NewRequest.Do err: %s\n", err)
+		log.Infof("http.NewRequest.Do err: %s\n", err)
 		return
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
-		fmt.Printf("Error reading body. err%s\n ", err)
+		log.Infof("Error reading body. err%s\n ", err)
 	}
 }
 func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {

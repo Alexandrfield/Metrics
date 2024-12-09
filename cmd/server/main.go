@@ -7,19 +7,22 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
+	"github.com/Alexandrfield/Metrics/internal/server"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
 func main() {
 	config := GetServerConfig()
 	storage := storage.CreateMemStorage()
-	servHandler := handler.CreateHandlerRepository(storage)
-	router := chi.NewRouter()
-	router.Get(`/value/*`, servHandler.getValue)
-	router.Get(`/`, servHandler.getAllData)
+	metricRep := server.MetricRepository{LocalStorage: storage}
+	servHandler := handler.CreateHandlerRepository(&metricRep)
 
-	router.Post(`/update/*`, servHandler.updateValue)
-	router.Post(`/update/`, servHandler.defaultAnswer)
+	router := chi.NewRouter()
+	router.Get(`/value/*`, servHandler.GetValue)
+	router.Get(`/`, servHandler.GetAllData)
+
+	router.Post(`/update/*`, servHandler.UpdateValue)
+	router.Post(`/update/`, servHandler.DefaultAnswer)
 
 	err := http.ListenAndServe(config.ServerAdderess, router)
 	if err != nil {

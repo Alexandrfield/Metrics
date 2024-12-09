@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/Alexandrfield/Metrics/internal/customErrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,8 +36,8 @@ func TestAddGaugePositiv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			memStorage.AddGauge(tt.name, tt.value)
-			res, ok := memStorage.GetGauge(tt.name)
-			assert.Equal(t, ok, true)
+			res, err := memStorage.GetGauge(tt.name)
+			assert.Equal(t, err, nil)
 			assert.Equal(t, tt.expect, res)
 		})
 	}
@@ -45,8 +47,9 @@ func TestAddGaugeNegativ(t *testing.T) {
 	memStorage := CreateMemStorage()
 
 	memStorage.AddGauge("test1", "23")
-	_, ok := memStorage.GetGauge("test2")
-	assert.Equal(t, ok, false)
+	_, err := memStorage.GetGauge("test2")
+	check := errors.Is(err, customErrors.ErrMetricNotExistIssue)
+	assert.Equal(t, check, true)
 }
 
 func TestAddCounterPositiv(t *testing.T) {
@@ -77,8 +80,8 @@ func TestAddCounterPositiv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			memStorage.AddCounter(tt.name, tt.value)
-			res, ok := memStorage.GetCounter(tt.name)
-			assert.Equal(t, ok, true)
+			res, err := memStorage.GetCounter(tt.name)
+			assert.Equal(t, err, nil)
 			assert.Equal(t, tt.expect, res)
 		})
 	}
@@ -88,8 +91,10 @@ func TestAddCounterNegativ(t *testing.T) {
 	memStorage := CreateMemStorage()
 
 	memStorage.AddCounter("test1", "23")
-	_, ok := memStorage.GetCounter("test2")
-	assert.Equal(t, ok, false)
+	_, err := memStorage.GetCounter("test2")
+
+	check := errors.Is(err, customErrors.ErrMetricNotExistIssue)
+	assert.Equal(t, check, true)
 }
 
 func TesGetAllMetricName(t *testing.T) {

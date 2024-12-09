@@ -2,83 +2,60 @@ package server
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
+
+	"github.com/Alexandrfield/Metrics/internal/customErrors"
+	"github.com/Alexandrfield/Metrics/internal/storage"
+	"gvisor.dev/gvisor/pkg/log"
 )
 
-func parseURL(req *http.Request) ([]string, int) {
-	url := strings.Split(req.URL.String(), "/")
-	fmt.Printf("parse len():%d, url:%v\n", len(url), url)
-	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>, Content-Type: text/plain
-	if url[1] == "update" && len(url) != 5 {
-		return []string{}, http.StatusNotFound
-	}
-	//expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
-	if url[1] == "value" && len(url) < 4 {
-		return []string{}, http.StatusBadRequest
-	}
-	return url, http.StatusOK
-}
-func defaultAnswer(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("defaultAnswer. req:%v;\n", req)
-	fmt.Printf("defaultAnswer: res.WriteHeader:%d\n", http.StatusNotImplemented)
-	res.WriteHeader(http.StatusNotImplemented)
+type MetricRepository struct {
+	LocalStorage *storage.MemStorage
 }
 
-func updateValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusMethodNotAllowed
-	fmt.Printf("req:%v; req.Method:%s\n", req, req.Method)
-
-	var url []string
-	url, statusH = parseURL(req)
-	if statusH == http.StatusOK {
-		fmt.Printf("try save url\n")
-		if !handl.HandleRequest(url) {
-			statusH = http.StatusBadRequest
-		}
+func (rep *MetricRepository) SetValue(metricType string, metricName string, metricValue string) error {
+	var err error
+	log.Debugf("metricType:%s; metricValue:%s\n", metricType, metricValue)
+	if rep.LocalStorage == nil {
+		log.Infof("MetricRepository has not been initialize! Create default MemStorage\n")
+		rep.LocalStorage = storage.CreateMemStorage()
 	}
-
-	fmt.Printf("res.WriteHeader:%d\n", statusH)
-	res.WriteHeader(statusH)
-}
-func getValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusMethodNotAllowed
-
-	var url []string
-	url, statusH = parseURL(req)
-	if statusH == http.StatusOK {
-		val, st := handl.HandleGetValue(url)
-		if st {
-			fmt.Printf("return value:%s\n", val)
-			res.WriteHeader(statusH)
-			res.Write([]byte(val))
-			return
-		} else {
-			statusH = http.StatusNotFound
-		}
+	switch metricType {
+	case "counter":
+		err = rep.LocalStorage.AddCounter(metricName, metricValue)
+	case "gauge":
+		err = rep.LocalStorage.AddGauge(metricName, metricValue)
 	}
-
-	fmt.Printf("res.WriteHeader:%d\n", statusH)
-	res.WriteHeader(statusH)
+	return err
 }
 
-func getAllData(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("getAllData\n")
-	allValues := handl.HandleAllValue()
-	page := `
-<html> 
-   <head> 
-   </head> 
-   <body> 
-`
-	for i := 0; i < len(allValues); i++ {
-		page += fmt.Sprintf(`<h3>%s   </h3>`, allValues[i])
+func (rep *MetricRepository) GetValue(metricType string, metricName string) (string, error) {
+	var err error
+	res := ""
+	if rep.LocalStorage == nil {
+		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customErrors.ErrMetricNotExistIssue)
 	}
-	page += `
-   </body> 
-</html>
-`
-	res.Header().Set("content-type", "Content-Type: text/html; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(page))
+	switch metricType {
+	case "counter":
+		res, err = rep.LocalStorage.GetCounter(metricName)
+	case "gauge":
+		res, err = rep.LocalStorage.GetGauge(metricName)
+	}
+	return res, err
+}
+
+func (rep *MetricRepository) GetAllValue() ([]string, error) {
+	var res []string
+	if rep.LocalStorage == nil {
+		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", customErrors.ErrMetricNotExistIssue)
+	}
+	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
+	for i := 0; i < len(allGaugeKeys); i++ {
+		t, _ := rep.LocalStorage.GetGauge(allGaugeKeys[i])
+		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allGaugeKeys[i], t))
+	}
+	for i := 0; i < len(allCounterKeys); i++ {
+		t, _ := rep.LocalStorage.GetGauge(allCounterKeys[i])
+		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allCounterKeys[i], t))
+	}
+	return res, nil
 }

@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
+	"github.com/Alexandrfield/Metrics/internal/server"
+	"github.com/Alexandrfield/Metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,12 +54,16 @@ func TestUpdateValue(t *testing.T) {
 			},
 		},
 	}
+	storage := storage.CreateMemStorage()
+	metricRep := server.MetricRepository{LocalStorage: storage}
+	servHandler := handler.CreateHandlerRepository(&metricRep)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
 
-			updateValue(w, request)
+			servHandler.UpdateValue(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.want.code, result.StatusCode)
@@ -67,7 +74,11 @@ func TestDefaultAnswer(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/update/unknown/test/1", nil)
 	w := httptest.NewRecorder()
 
-	defaultAnswer(w, request)
+	storage := storage.CreateMemStorage()
+	metricRep := server.MetricRepository{LocalStorage: storage}
+	servHandler := handler.CreateHandlerRepository(&metricRep)
+
+	servHandler.DefaultAnswer(w, request)
 	result := w.Result()
 	defer result.Body.Close()
 	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
@@ -96,7 +107,11 @@ func TestParserURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
 
-			updateValue(w, request)
+			storage := storage.CreateMemStorage()
+			metricRep := server.MetricRepository{LocalStorage: storage}
+			servHandler := handler.CreateHandlerRepository(&metricRep)
+
+			servHandler.UpdateValue(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.resStatus, result.StatusCode)
