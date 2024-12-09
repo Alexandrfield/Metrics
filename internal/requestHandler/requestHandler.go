@@ -61,6 +61,7 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	var url []string
 	url, statusH = parseURL(req)
 	if statusH == http.StatusOK {
+		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[3], url[3])
 		val, err := rep.memStorage.GetValue(url[2], url[3])
 		if err != nil {
 			res.WriteHeader(statusH)
