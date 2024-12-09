@@ -50,7 +50,6 @@ func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
 }
 func prepareReportMetrics(serverAdderess string, metricsGauge map[string]storage.TypeGauge,
 	metricsCounter map[string]storage.TypeCounter) []string {
-
 	dataMetricForReport := make([]string, 0)
 	for key, value := range metricsGauge {
 		dataMetricForReport = append(dataMetricForReport,
@@ -71,7 +70,7 @@ func reportMetrics(client *http.Client, dataMetricForReport []string) {
 }
 func reportMetric(client *http.Client, url string) {
 	req, err := http.NewRequest(
-		http.MethodPost, url, nil,
+		http.MethodPost, url, http.NoBody,
 	)
 	if err != nil {
 		log.Printf("http.NewRequest. err: %s\n", err)

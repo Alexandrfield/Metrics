@@ -1,12 +1,15 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 
 	"log"
 
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
+
+var ErrNotImplementedIssue = errors.New("Not supported")
 
 type MetricRepository struct {
 	LocalStorage *storage.MemStorage
@@ -24,6 +27,8 @@ func (rep *MetricRepository) SetValue(metricType string, metricName string, metr
 		err = rep.LocalStorage.AddCounter(metricName, metricValue)
 	case "gauge":
 		err = rep.LocalStorage.AddGauge(metricName, metricValue)
+	default:
+		err = fmt.Errorf("Unknown type% %s%w", metricType, ErrNotImplementedIssue)
 	}
 	return err
 }
@@ -39,6 +44,8 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 		res, err = rep.LocalStorage.GetCounter(metricName)
 	case "gauge":
 		res, err = rep.LocalStorage.GetGauge(metricName)
+	default:
+		err = fmt.Errorf("Unknown type% %s%w", metricType, ErrNotImplementedIssue)
 	}
 	return res, err
 }

@@ -15,7 +15,6 @@ func parseFlags(config *server.Config) {
 	if envServerAdderess, ok := os.LookupEnv("ADDRESS"); ok {
 		config.ServerAdderess = envServerAdderess
 	}
-
 }
 
 func GetServerConfig() server.Config {

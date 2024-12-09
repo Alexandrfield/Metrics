@@ -80,9 +80,8 @@ func TestDefaultAnswer(t *testing.T) {
 
 	servHandler.DefaultAnswer(w, request)
 	result := w.Result()
-	defer result.Body.Close()
 	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
-
+	_ = result.Body.Close()
 }
 
 func TestParserURL(t *testing.T) {
@@ -104,7 +103,7 @@ func TestParserURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
+			request := httptest.NewRequest(http.MethodPost, tt.request, http.NoBody)
 			w := httptest.NewRecorder()
 
 			store := storage.CreateMemStorage()
@@ -113,9 +112,8 @@ func TestParserURL(t *testing.T) {
 
 			servHandler.UpdateValue(w, request)
 			result := w.Result()
-			defer result.Body.Close()
 			assert.Equal(t, tt.resStatus, result.StatusCode)
+			_ = result.Body.Close()
 		})
 	}
-
 }

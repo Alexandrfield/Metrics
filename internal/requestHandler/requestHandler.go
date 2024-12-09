@@ -24,7 +24,8 @@ func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
 
 func parseURL(req *http.Request) ([]string, int) {
 	url := strings.Split(req.URL.String(), "/")
-	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>, Content-Type: text/plain
+	//expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
+	//Content-Type: text/plain
 	if url[1] == "update" && len(url) != 5 {
 		return []string{}, http.StatusNotFound
 	}
@@ -57,19 +58,19 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	res.WriteHeader(statusH)
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusMethodNotAllowed
-
-	var url []string
-	url, statusH = parseURL(req)
+	url, statusH := parseURL(req)
 	if statusH == http.StatusOK {
 		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
 		val, err := rep.memStorage.GetValue(url[2], url[3])
 		if err != nil {
 			res.WriteHeader(statusH)
-			res.Write([]byte(val))
+			_, err = res.Write([]byte(val))
+			if err != nil {
+				log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
+			}
 			return
 		} else {
-			log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
+			log.Printf("issue for res.Write([]byte(val)); err:%s\n", err)
 			statusH = http.StatusNotFound
 		}
 	}
@@ -85,7 +86,7 @@ func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) 
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	all_values_template := `
+	allValuesTemplate := `
 <html> 
    <head> 
    </head> 
@@ -95,7 +96,7 @@ func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) 
    </body> 
 </html>
 `
-	ready_template, err := template.New("templ").Parse(all_values_template)
+	readyTemplate, err := template.New("templ").Parse(allValuesTemplate)
 
 	if err != nil {
 		res.WriteHeader(http.StatusInternalServerError)
@@ -104,5 +105,8 @@ func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) 
 
 	res.Header().Set("content-type", "Content-Type: text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
-	ready_template.Execute(res, allValues)
+	err = readyTemplate.Execute(res, allValues)
+	if err == nil {
+		log.Printf("issue for readyTemplate.Execute(res, allValues). err:%s\n", err)
+	}
 }

@@ -84,7 +84,6 @@ func TestAddCounterPositiv(t *testing.T) {
 			assert.Equal(t, tt.expect, res)
 		})
 	}
-
 }
 func TestAddCounterNegativ(t *testing.T) {
 	memStorage := CreateMemStorage()
