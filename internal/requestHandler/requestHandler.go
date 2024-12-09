@@ -6,12 +6,26 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-var globalMemStorage storage.MemStorageI = nil
+type CommonMemStorage interface {
+	AddGauge(name string, d string) bool
+	GetGauge(name string) (string, bool)
+	AddCounter(name string, d string) bool
+	GetCounter(name string) (string, bool)
+	GetAllMetricName() ([]string, []string)
+}
 
-func HandleRequest(url []string) bool {
+type Repository struct {
+	memStorage CommonMemStorage
+}
+
+func CreateHandlerRepository(stor CommonMemStorage) *Repository {
+	return &Repository{memStorage: stor}
+}
+
+func (rep *Repository) HandleRequest(url []string) bool {
 	status := false
 	fmt.Printf("url:%v\n", url)
-	if globalMemStorage == nil {
+	if rep.memStorage == nil {
 		globalMemStorage = storage.CreateMemStorage()
 	}
 	switch url[2] {

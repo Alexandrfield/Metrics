@@ -1,4 +1,4 @@
-package main
+package agent
 
 import (
 	"fmt"
@@ -58,13 +58,14 @@ func TestPrepareReportMetrics(t *testing.T) {
 	metricsGauge := make(map[string]storage.TypeGauge)
 	metricsGauge["Alloc"] = 9.1
 	metricsGauge["GCCPUFraction"] = 10.43
+	serverAdderess := "127.0.0.1:8080"
 
 	var expected []string = []string{
-		fmt.Sprintf("http://%s/update/gauge/Alloc/9.1", globalServerAdderess),
-		fmt.Sprintf("http://%s/update/gauge/GCCPUFraction/10.43", globalServerAdderess),
-		fmt.Sprintf("http://%s/update/counter/PollCount/100", globalServerAdderess),
-		fmt.Sprintf("http://%s/update/counter/test/-1", globalServerAdderess),
+		fmt.Sprintf("http://%s/update/gauge/Alloc/9.1", serverAdderess),
+		fmt.Sprintf("http://%s/update/gauge/GCCPUFraction/10.43", serverAdderess),
+		fmt.Sprintf("http://%s/update/counter/PollCount/100", serverAdderess),
+		fmt.Sprintf("http://%s/update/counter/test/-1", serverAdderess),
 	}
-	actual := prepareReportMetrics(metricsGauge, metricsCounter)
+	actual := prepareReportMetrics(serverAdderess, metricsGauge, metricsCounter)
 	assert.ElementsMatch(t, actual, expected)
 }

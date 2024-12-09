@@ -5,37 +5,41 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/Alexandrfield/Metrics/internal/agent"
 )
 
-var globalPollIntervalSecond int
-var globalReportIntervalSecond int
-var globalServerAdderess string
-
-func parseFlags() {
-	flag.StringVar(&globalServerAdderess, "a", "localhost:8080", "address and port to run server [default:localhost:8080]")
-	flag.IntVar(&globalReportIntervalSecond, "r", 10, "interval in seconds  for sending report to server [default: 10 second]")
-	flag.IntVar(&globalPollIntervalSecond, "p", 2, "interval in seconds for check metrics [default: 2 second]")
+func parseFlags(conf *agent.Config) {
+	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080", "address and port to run server [default:localhost:8080]")
+	flag.IntVar(&conf.ReportIntervalSecond, "r", 10, "interval in seconds  for sending report to server [default: 10 second]")
+	flag.IntVar(&conf.PollIntervalSecond, "p", 2, "interval in seconds for check metrics [default: 2 second]")
 	flag.Parse()
 
 	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
-		globalServerAdderess = envServerAdderess
+		conf.ServerAdderess = envServerAdderess
 	}
 
-	if envReportIntervalSecond := os.Getenv("REPORT_INTERVAL"); envReportIntervalSecond != "" {
+	if envReportIntervalSecond, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		value, err := strconv.Atoi(envReportIntervalSecond)
 		if err != nil {
 			fmt.Printf("error atoi REPORT_INTERVAL; err: %s\n", err)
 		} else {
-			globalReportIntervalSecond = value
+			conf.ReportIntervalSecond = value
 		}
 	}
-	if envPollIntervalSecond := os.Getenv("POLL_INTERVAL"); envPollIntervalSecond != "" {
+	if envPollIntervalSecond, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		value, err := strconv.Atoi(envPollIntervalSecond)
 		if err != nil {
 			fmt.Printf("error atoi POLL_INTERVAL; err: %s\n", err)
 		} else {
-			globalPollIntervalSecond = value
+			conf.PollIntervalSecond = value
 		}
 	}
 
+}
+
+func GetAgentConfig() agent.Config {
+	var conf agent.Config
+	parseFlags(&conf)
+	return conf
 }
