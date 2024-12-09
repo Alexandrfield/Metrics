@@ -9,7 +9,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-var ErrNotImplementedIssue = errors.New("Not supported")
+var ErrNotImplementedIssue = errors.New("not supported")
 
 type MetricRepository struct {
 	LocalStorage *storage.MemStorage
@@ -19,7 +19,7 @@ func (rep *MetricRepository) SetValue(metricType string, metricName string, metr
 	var err error
 	log.Printf("metricType:%s; metricValue:%s\n", metricType, metricValue)
 	if rep.LocalStorage == nil {
-		log.Printf("MetricRepository has not been initialize! Create default MemStorage\n")
+		log.Printf("metricRepository has not been initialize! Create default MemStorage\n")
 		rep.LocalStorage = storage.CreateMemStorage()
 	}
 	switch metricType {
@@ -28,7 +28,7 @@ func (rep *MetricRepository) SetValue(metricType string, metricName string, metr
 	case "gauge":
 		err = rep.LocalStorage.AddGauge(metricName, metricValue)
 	default:
-		err = fmt.Errorf("Unknown type %s;err:%w", metricType, ErrNotImplementedIssue)
+		err = fmt.Errorf("unknown type %s;err:%w", metricType, ErrNotImplementedIssue)
 	}
 	return err
 }
@@ -37,7 +37,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	var err error
 	res := ""
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
+		return res, fmt.Errorf("metricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
 	}
 	switch metricType {
 	case "counter":
@@ -45,15 +45,15 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	case "gauge":
 		res, err = rep.LocalStorage.GetGauge(metricName)
 	default:
-		err = fmt.Errorf("Unknown type% %s%w", metricType, ErrNotImplementedIssue)
+		err = fmt.Errorf("unknown type %s; err:%w", metricType, ErrNotImplementedIssue)
 	}
 	return res, err
 }
 
 func (rep *MetricRepository) GetAllValue() ([]string, error) {
-	var res []string
+	res := make([]string, 0)
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
+		return res, fmt.Errorf("metricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
 	}
 	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
 	for _, val := range allGaugeKeys {

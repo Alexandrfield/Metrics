@@ -84,7 +84,10 @@ func TestAddCounterPositiv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			memStorage.AddCounter(tt.name, tt.value)
+			err := memStorage.AddCounter(tt.name, tt.value)
+			if err != nil {
+				log.Printf("Error for test; err:%v\n", err)
+			}
 			res, err := memStorage.GetCounter(tt.name)
 			assert.Equal(t, err, nil)
 			assert.Equal(t, tt.expect, res)
@@ -94,8 +97,11 @@ func TestAddCounterPositiv(t *testing.T) {
 func TestAddCounterNegativ(t *testing.T) {
 	memStorage := CreateMemStorage()
 
-	memStorage.AddCounter("test1", "23")
-	_, err := memStorage.GetCounter("test2")
+	err := memStorage.AddCounter("test1", "23")
+	if err != nil {
+		log.Printf("Error for test; err:%v\n", err)
+	}
+	_, err = memStorage.GetCounter("test2")
 
 	check := errors.Is(err, ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
@@ -138,14 +144,20 @@ func TesGetAllMetricName(t *testing.T) {
 			value: "0",
 		},
 	}
-	var expected []string
-	var actual []string
+	expected := make([]string, 0)
+	actual := make([]string, 0)
 	for _, tt := range testsGauge {
-		memStorage.AddGauge(tt.name, tt.value)
+		err := memStorage.AddGauge(tt.name, tt.value)
+		if err != nil {
+			log.Printf("Error for test; err:%v\n", err)
+		}
 		expected = append(expected, tt.name)
 	}
 	for _, tt := range testsCounter {
-		memStorage.AddCounter(tt.name, tt.value)
+		err := memStorage.AddCounter(tt.name, tt.value)
+		if err != nil {
+			log.Printf("Error for test; err:%v\n", err)
+		}
 		expected = append(expected, tt.name)
 	}
 

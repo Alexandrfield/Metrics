@@ -6,8 +6,8 @@ import (
 	"strconv"
 )
 
-var ErrCantParseDataIssue = errors.New("Can't parser or use data")
-var ErrMetricNotExistIssue = errors.New("Metric with this name or type is does't exist")
+var ErrCantParseDataIssue = errors.New("can't parser or use data")
+var ErrMetricNotExistIssue = errors.New("metric with this name or type is does't exist")
 
 type TypeGauge float64
 type TypeCounter int64
@@ -23,8 +23,8 @@ func CreateMemStorage() *MemStorage {
 
 func (st *MemStorage) AddGauge(name string, raw string) error {
 	value, err := strconv.ParseFloat(raw, 64)
-	if err == nil {
-		return fmt.Errorf("Error parse Gauge type. Value:%s; error parse :%w; %w", raw, err, ErrCantParseDataIssue)
+	if err != nil {
+		return fmt.Errorf("error parse Gauge type. Value:%s; error parse :%w; %w", raw, err, ErrCantParseDataIssue)
 	}
 	st.gaugeData[name] = TypeGauge(value)
 	return nil
@@ -32,14 +32,14 @@ func (st *MemStorage) AddGauge(name string, raw string) error {
 func (st *MemStorage) GetGauge(name string) (string, error) {
 	val, ok := st.gaugeData[name]
 	if !ok {
-		return "", fmt.Errorf("Can't find Gauge metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
+		return "", fmt.Errorf("can't find Gauge metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
 	}
 	return strconv.FormatFloat(float64(val), 'f', -1, 64), nil
 }
 func (st *MemStorage) AddCounter(name string, raw string) error {
 	value, err := strconv.Atoi(raw)
-	if err == nil {
-		return fmt.Errorf("Error parse Counter type. Value:%s; err parse:%w; %w", raw, err, ErrCantParseDataIssue)
+	if err != nil {
+		return fmt.Errorf("error parse Counter type. Value:%s; err parse:%w; %w", raw, err, ErrCantParseDataIssue)
 	}
 	val, ok := st.counterData[name]
 	if !ok {
@@ -51,16 +51,16 @@ func (st *MemStorage) AddCounter(name string, raw string) error {
 func (st *MemStorage) GetCounter(name string) (string, error) {
 	val, ok := st.counterData[name]
 	if !ok {
-		return "", fmt.Errorf("Can't find Counter metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
+		return "", fmt.Errorf("can't find Counter metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
 	}
 	return strconv.Itoa(int(val)), nil
 }
 func (st *MemStorage) GetAllMetricName() ([]string, []string) {
-	allGaugeKeys := make([]string, len(st.gaugeData))
+	allGaugeKeys := make([]string, 0)
 	for key := range st.gaugeData {
 		allGaugeKeys = append(allGaugeKeys, key)
 	}
-	allCounterKeys := make([]string, len(st.counterData))
+	allCounterKeys := make([]string, 0)
 	for key := range st.counterData {
 		allCounterKeys = append(allCounterKeys, key)
 	}

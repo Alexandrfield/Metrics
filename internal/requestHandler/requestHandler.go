@@ -44,7 +44,7 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	url, statusH := parseURL(req)
 	if statusH == http.StatusOK {
 		err := rep.memStorage.SetValue(url[2], url[3], url[4])
-		log.Printf("SetValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
+		log.Printf("setValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 		if err != nil {
 			log.Printf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 			statusH = http.StatusBadRequest
@@ -78,7 +78,7 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()
-	if err == nil {
+	if err != nil {
 		log.Printf("issue for GetAllData. err:%s\n", err)
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -103,7 +103,7 @@ func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) 
 	res.Header().Set("content-type", "Content-Type: text/html; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 	err = readyTemplate.Execute(res, allValues)
-	if err == nil {
+	if err != nil {
 		log.Printf("issue for readyTemplate.Execute(res, allValues). err:%s\n", err)
 	}
 }
