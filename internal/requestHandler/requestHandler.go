@@ -60,15 +60,15 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
 		val, err := rep.memStorage.GetValue(url[2], url[3])
 		if err != nil {
+			log.Printf("issue for res.Write([]byte(val)); err:%s\n", err)
+			statusH = http.StatusNotFound
+		} else {
 			res.WriteHeader(statusH)
 			_, err = res.Write([]byte(val))
 			if err != nil {
 				log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
 			}
 			return
-		} else {
-			log.Printf("issue for res.Write([]byte(val)); err:%s\n", err)
-			statusH = http.StatusNotFound
 		}
 	}
 

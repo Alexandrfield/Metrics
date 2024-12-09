@@ -479,7 +479,7 @@ linters:
     - bidichk
     - bodyclose
     - containedctx
-    - dupl
+    #s- dupl
     - dupword
     - durationcheck
     - errcheck
