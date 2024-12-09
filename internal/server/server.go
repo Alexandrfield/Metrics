@@ -28,7 +28,7 @@ func (rep *MetricRepository) SetValue(metricType string, metricName string, metr
 	case "gauge":
 		err = rep.LocalStorage.AddGauge(metricName, metricValue)
 	default:
-		err = fmt.Errorf("Unknown type% %s%w", metricType, ErrNotImplementedIssue)
+		err = fmt.Errorf("Unknown type %s;err:%w", metricType, ErrNotImplementedIssue)
 	}
 	return err
 }
@@ -56,13 +56,13 @@ func (rep *MetricRepository) GetAllValue() ([]string, error) {
 		return res, fmt.Errorf("MetricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
 	}
 	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
-	for i := 0; i < len(allGaugeKeys); i++ {
-		t, _ := rep.LocalStorage.GetGauge(allGaugeKeys[i])
-		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allGaugeKeys[i], t))
+	for _, val := range allGaugeKeys {
+		t, _ := rep.LocalStorage.GetGauge(val)
+		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", val, t))
 	}
-	for i := 0; i < len(allCounterKeys); i++ {
-		t, _ := rep.LocalStorage.GetGauge(allCounterKeys[i])
-		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", allCounterKeys[i], t))
+	for _, val := range allCounterKeys {
+		t, _ := rep.LocalStorage.GetGauge(val)
+		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", val, t))
 	}
 	return res, nil
 }

@@ -24,7 +24,7 @@ func CreateMemStorage() *MemStorage {
 func (st *MemStorage) AddGauge(name string, raw string) error {
 	value, err := strconv.ParseFloat(raw, 64)
 	if err == nil {
-		return fmt.Errorf("Error parse Gauge type. Value:%s; err:%w", raw, ErrCantParseDataIssue)
+		return fmt.Errorf("Error parse Gauge type. Value:%s; error parse :%w; %w", raw, err, ErrCantParseDataIssue)
 	}
 	st.gaugeData[name] = TypeGauge(value)
 	return nil
@@ -39,7 +39,7 @@ func (st *MemStorage) GetGauge(name string) (string, error) {
 func (st *MemStorage) AddCounter(name string, raw string) error {
 	value, err := strconv.Atoi(raw)
 	if err == nil {
-		return fmt.Errorf("Error parse Counter type. Value:%s; err:%w", raw, ErrCantParseDataIssue)
+		return fmt.Errorf("Error parse Counter type. Value:%s; err parse:%w; %w", raw, err, ErrCantParseDataIssue)
 	}
 	val, ok := st.counterData[name]
 	if !ok {
@@ -56,11 +56,11 @@ func (st *MemStorage) GetCounter(name string) (string, error) {
 	return strconv.Itoa(int(val)), nil
 }
 func (st *MemStorage) GetAllMetricName() ([]string, []string) {
-	var allGaugeKeys []string
+	allGaugeKeys := make([]string, len(st.gaugeData))
 	for key := range st.gaugeData {
 		allGaugeKeys = append(allGaugeKeys, key)
 	}
-	var allCounterKeys []string
+	allCounterKeys := make([]string, len(st.counterData))
 	for key := range st.counterData {
 		allCounterKeys = append(allCounterKeys, key)
 	}

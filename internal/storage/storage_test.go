@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,19 +35,24 @@ func TestAddGaugePositiv(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			memStorage.AddGauge(tt.name, tt.value)
+			err := memStorage.AddGauge(tt.name, tt.value)
+			if err != nil {
+				log.Printf("Error for test; err:%v\n", err)
+			}
 			res, err := memStorage.GetGauge(tt.name)
 			assert.Equal(t, err, nil)
 			assert.Equal(t, tt.expect, res)
 		})
 	}
-
 }
 func TestAddGaugeNegativ(t *testing.T) {
 	memStorage := CreateMemStorage()
 
-	memStorage.AddGauge("test1", "23")
-	_, err := memStorage.GetGauge("test2")
+	err := memStorage.AddGauge("test1", "23")
+	if err != nil {
+		log.Printf("Error for test; err:%v\n", err)
+	}
+	_, err = memStorage.GetGauge("test2")
 	check := errors.Is(err, ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
 }
@@ -61,13 +67,13 @@ func TestAddCounterPositiv(t *testing.T) {
 	}{
 		{
 			name:   "test1",
-			value:  "24",
-			expect: "24",
+			value:  "42",
+			expect: "42",
 		},
 		{
 			name:   "test2",
-			value:  "-24",
-			expect: "-24",
+			value:  "-77",
+			expect: "-77",
 		},
 		{
 			name:   "test3",
@@ -104,11 +110,11 @@ func TesGetAllMetricName(t *testing.T) {
 	}{
 		{
 			name:  "testsGauge1",
-			value: "24",
+			value: "14",
 		},
 		{
 			name:  "testsGauge2",
-			value: "-24",
+			value: "-14",
 		},
 		{
 			name:  "testsGauge3",

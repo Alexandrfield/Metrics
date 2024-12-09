@@ -24,12 +24,12 @@ func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
 
 func parseURL(req *http.Request) ([]string, int) {
 	url := strings.Split(req.URL.String(), "/")
-	//expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
-	//Content-Type: text/plain
+	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
+	// Content-Type: text/plain
 	if url[1] == "update" && len(url) != 5 {
 		return []string{}, http.StatusNotFound
 	}
-	//expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
+	// expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
 	if url[1] == "value" && len(url) < 4 {
 		return []string{}, http.StatusBadRequest
 	}
@@ -41,10 +41,7 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusMethodNotAllowed
-
-	var url []string
-	url, statusH = parseURL(req)
+	url, statusH := parseURL(req)
 	if statusH == http.StatusOK {
 		err := rep.memStorage.SetValue(url[2], url[3], url[4])
 		log.Printf("SetValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
