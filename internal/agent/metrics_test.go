@@ -10,7 +10,7 @@ import (
 )
 
 func TestUpdateGaugeMetrics(t *testing.T) {
-	var listMetricsName []string = []string{"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects", "HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse", "MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse", "StackSys", "Sys", "TotalAlloc", "RandomValue"}
+	var listMetricsName = []string{"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects", "HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse", "MSpanSys", "Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse", "StackSys", "Sys", "TotalAlloc", "RandomValue"}
 	metricsGauge := make(map[string]storage.TypeGauge)
 	for _, val := range listMetricsName {
 		metricsGauge[val] = -1
@@ -31,7 +31,7 @@ func TestUpdateGaugeMetrics(t *testing.T) {
 }
 
 func TestUpdateCounterMetrics(t *testing.T) {
-	var listMetricsName []string = []string{"PollCount"}
+	var listMetricsName = []string{"PollCount"}
 	metricsCounter := make(map[string]storage.TypeCounter)
 	for _, val := range listMetricsName {
 		metricsCounter[val] = -1
@@ -60,7 +60,7 @@ func TestPrepareReportMetrics(t *testing.T) {
 	metricsGauge["GCCPUFraction"] = 10.43
 	serverAdderess := "127.0.0.1:8080"
 
-	var expected []string = []string{
+	var expected = []string{
 		fmt.Sprintf("http://%s/update/gauge/Alloc/9.1", serverAdderess),
 		fmt.Sprintf("http://%s/update/gauge/GCCPUFraction/10.43", serverAdderess),
 		fmt.Sprintf("http://%s/update/counter/PollCount/100", serverAdderess),
