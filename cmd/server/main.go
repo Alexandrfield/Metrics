@@ -13,8 +13,8 @@ import (
 
 func main() {
 	config := GetServerConfig()
-	storage := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: storage}
+	stor := storage.CreateMemStorage()
+	metricRep := server.MetricRepository{LocalStorage: stor}
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	router := chi.NewRouter()

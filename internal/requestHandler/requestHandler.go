@@ -45,9 +45,10 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	var url []string
 	url, statusH = parseURL(req)
 	if statusH == http.StatusOK {
-		err := rep.memStorage.SetValue(url[3], url[3], url[4])
+		err := rep.memStorage.SetValue(url[2], url[3], url[4])
+		log.Printf("SetValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 		if err != nil {
-			log.Printf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[3], url[3], url[4], err)
+			log.Printf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 			statusH = http.StatusBadRequest
 		}
 	}
@@ -61,14 +62,14 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	var url []string
 	url, statusH = parseURL(req)
 	if statusH == http.StatusOK {
-		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[3], url[3])
+		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
 		val, err := rep.memStorage.GetValue(url[2], url[3])
 		if err != nil {
 			res.WriteHeader(statusH)
 			res.Write([]byte(val))
 			return
 		} else {
-			log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[3], url[3], err)
+			log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
 			statusH = http.StatusNotFound
 		}
 	}

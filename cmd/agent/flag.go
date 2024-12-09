@@ -10,9 +10,12 @@ import (
 )
 
 func parseFlags(conf *agent.Config) {
-	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080", "address and port to run server [default:localhost:8080]")
-	flag.IntVar(&conf.ReportIntervalSecond, "r", 10, "interval in seconds  for sending report to server [default: 10 second]")
-	flag.IntVar(&conf.PollIntervalSecond, "p", 2, "interval in seconds for check metrics [default: 2 second]")
+	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080",
+		"address and port to run server [default:localhost:8080]")
+	flag.IntVar(&conf.ReportIntervalSecond, "r", 10,
+		"interval in seconds  for sending report to server [default: 10 second]")
+	flag.IntVar(&conf.PollIntervalSecond, "p", 2,
+		"interval in seconds for check metrics [default: 2 second]")
 	flag.Parse()
 
 	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
@@ -35,7 +38,6 @@ func parseFlags(conf *agent.Config) {
 			conf.PollIntervalSecond = value
 		}
 	}
-
 }
 
 func GetAgentConfig() agent.Config {

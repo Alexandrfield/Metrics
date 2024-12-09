@@ -54,28 +54,28 @@ func TestUpdateValue(t *testing.T) {
 			},
 		},
 	}
-	storage := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: storage}
+	store := storage.CreateMemStorage()
+	metricRep := server.MetricRepository{LocalStorage: store}
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
+			request := httptest.NewRequest(http.MethodPost, tt.request, http.NoBody)
 			w := httptest.NewRecorder()
 
 			servHandler.UpdateValue(w, request)
 			result := w.Result()
-			defer result.Body.Close()
+			_ = result.Body.Close()
 			assert.Equal(t, tt.want.code, result.StatusCode)
 		})
 	}
 }
 func TestDefaultAnswer(t *testing.T) {
-	request := httptest.NewRequest(http.MethodPost, "/update/unknown/test/1", nil)
+	request := httptest.NewRequest(http.MethodPost, "/update/unknown/test/1", http.NoBody)
 	w := httptest.NewRecorder()
 
-	storage := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: storage}
+	store := storage.CreateMemStorage()
+	metricRep := server.MetricRepository{LocalStorage: store}
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	servHandler.DefaultAnswer(w, request)
@@ -107,8 +107,8 @@ func TestParserURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
 			w := httptest.NewRecorder()
 
-			storage := storage.CreateMemStorage()
-			metricRep := server.MetricRepository{LocalStorage: storage}
+			store := storage.CreateMemStorage()
+			metricRep := server.MetricRepository{LocalStorage: store}
 			servHandler := handler.CreateHandlerRepository(&metricRep)
 
 			servHandler.UpdateValue(w, request)

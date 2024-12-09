@@ -46,16 +46,19 @@ func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
 	metrics["RandomValue"] = storage.TypeGauge(rand.Float64())
 }
 func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
-	metrics["PollCount"] = metrics["PollCount"] + 1
+	metrics["PollCount"]++
 }
-func prepareReportMetrics(serverAdderess string, metricsGauge map[string]storage.TypeGauge, metricsCounter map[string]storage.TypeCounter) []string {
+func prepareReportMetrics(serverAdderess string, metricsGauge map[string]storage.TypeGauge,
+	metricsCounter map[string]storage.TypeCounter) []string {
 
 	dataMetricForReport := make([]string, 0)
 	for key, value := range metricsGauge {
-		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("http://%s/update/gauge/%s/%v", serverAdderess, key, value))
+		dataMetricForReport = append(dataMetricForReport,
+			fmt.Sprintf("http://%s/update/gauge/%s/%v", serverAdderess, key, value))
 	}
 	for key, value := range metricsCounter {
-		dataMetricForReport = append(dataMetricForReport, fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value))
+		dataMetricForReport = append(dataMetricForReport,
+			fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value))
 		metricsCounter[key] = 0
 	}
 	return dataMetricForReport
@@ -80,11 +83,11 @@ func reportMetric(client *http.Client, url string) {
 		log.Printf("http.NewRequest.Do err: %s\n", err)
 		return
 	}
-	defer resp.Body.Close()
 	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		log.Printf("Error reading body. err%s\n ", err)
 	}
+	_ = resp.Body.Close()
 }
 func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
