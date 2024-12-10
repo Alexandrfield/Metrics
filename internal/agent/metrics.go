@@ -56,14 +56,6 @@ func prepareReportGaugeMetrics(serverAdderess string, metricsGauge map[string]st
 	}
 	return dataMetricForReport
 }
-func prepareReportCounterMetric(serverAdderess string, metricsCounter map[string]storage.TypeCounter) []string {
-	dataMetricForReport := make([]string, 0)
-	for key, value := range metricsCounter {
-		dataMetricForReport = append(dataMetricForReport,
-			fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value))
-	}
-	return dataMetricForReport
-}
 
 func reportMetrics(client *http.Client, dataMetricForReport []string) {
 	for _, metric := range dataMetricForReport {
@@ -74,7 +66,6 @@ func reportMetrics(client *http.Client, dataMetricForReport []string) {
 	}
 }
 func reportMetric(client *http.Client, url string) (int, error) {
-	status := http.StatusBadRequest
 	req, err := http.NewRequest(
 		http.MethodPost, url, http.NoBody,
 	)
@@ -84,14 +75,14 @@ func reportMetric(client *http.Client, url string) (int, error) {
 	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := client.Do(req)
-	status = resp.StatusCode
+	status := resp.StatusCode
 	if err != nil {
 		log.Printf("http.NewRequest.Do err: %s\n", err)
 		return status, fmt.Errorf("http.NewRequest.Do err:%w", err)
 	}
 	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
-		return status, fmt.Errorf("Error reading body. err:%w", err)
+		return status, fmt.Errorf("error reading body. err:%w", err)
 	}
 	_ = resp.Body.Close()
 	return status, nil
@@ -99,7 +90,6 @@ func reportMetric(client *http.Client, url string) (int, error) {
 
 func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCounter map[string]storage.TypeCounter) {
 	for key, value := range metricsCounter {
-
 		url := fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value)
 		statusCode, err := reportMetric(client, url)
 		if err != nil {
