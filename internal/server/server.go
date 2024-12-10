@@ -9,7 +9,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-var ErrNotImplementedIssue = errors.New("not supported")
+var errNotImplementedIssue = errors.New("not supported")
 
 type MetricRepository struct {
 	LocalStorage *storage.MemStorage
@@ -28,7 +28,7 @@ func (rep *MetricRepository) SetValue(metricType string, metricName string, metr
 	case "gauge":
 		err = rep.LocalStorage.AddGauge(metricName, metricValue)
 	default:
-		err = fmt.Errorf("unknown type %s;err:%w", metricType, ErrNotImplementedIssue)
+		err = fmt.Errorf("unknown type %s;err:%w", metricType, errNotImplementedIssue)
 	}
 	return err
 }
@@ -37,7 +37,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	var err error
 	res := ""
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("metricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
+		return res, errors.New("metricRepository has not been initialize.")
 	}
 	switch metricType {
 	case "counter":
@@ -47,7 +47,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 		log.Printf("gauge -> metricName:%s\n", metricName)
 		res, err = rep.LocalStorage.GetGauge(metricName)
 	default:
-		err = fmt.Errorf("unknown type %s; err:%w", metricType, ErrNotImplementedIssue)
+		err = fmt.Errorf("unknown type %s; err:%w", metricType, errNotImplementedIssue)
 	}
 	return res, err
 }
@@ -55,7 +55,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 func (rep *MetricRepository) GetAllValue() ([]string, error) {
 	res := make([]string, 0)
 	if rep.LocalStorage == nil {
-		return res, fmt.Errorf("metricRepository has not been initialize. err:%w", storage.ErrMetricNotExistIssue)
+		return res, errors.New("metricRepository has not been initialize.")
 	}
 	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
 	for _, val := range allGaugeKeys {

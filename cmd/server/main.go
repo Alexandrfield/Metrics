@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	config := GetServerConfig()
+	config := server.GetServerConfig()
 	stor := storage.CreateMemStorage()
 	metricRep := server.MetricRepository{LocalStorage: stor}
 	servHandler := handler.CreateHandlerRepository(&metricRep)

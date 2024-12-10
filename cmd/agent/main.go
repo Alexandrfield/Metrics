@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	agentConfig := GetAgentConfig()
+	agentConfig := agent.GetAgentConfig()
 	client := http.Client{
 		Timeout: time.Second * 1, // интервал ожидания: 1 секунда
 	}

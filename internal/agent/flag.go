@@ -1,15 +1,13 @@
-package main
+package agent
 
 import (
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/Alexandrfield/Metrics/internal/agent"
 )
 
-func parseFlags(conf *agent.Config) {
+func parseFlags(conf *Config) {
 	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080",
 		"address and port to run server [default:localhost:8080]")
 	flag.IntVar(&conf.ReportIntervalSecond, "r", 10,
@@ -40,8 +38,8 @@ func parseFlags(conf *agent.Config) {
 	}
 }
 
-func GetAgentConfig() agent.Config {
-	var conf agent.Config
+func GetAgentConfig() Config {
+	var conf Config
 	parseFlags(&conf)
 	return conf
 }

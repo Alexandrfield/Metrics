@@ -1,13 +1,11 @@
-package main
+package server
 
 import (
 	"flag"
 	"os"
-
-	"github.com/Alexandrfield/Metrics/internal/server"
 )
 
-func parseFlags(config *server.Config) {
+func parseFlags(config *Config) {
 	flag.StringVar(&config.ServerAdderess, "a", "localhost:8080",
 		"address and port to run server [default:localhost:8080]")
 	flag.Parse()
@@ -17,8 +15,8 @@ func parseFlags(config *server.Config) {
 	}
 }
 
-func GetServerConfig() server.Config {
-	var config server.Config
+func GetServerConfig() Config {
+	var config Config
 	parseFlags(&config)
 	return config
 }
