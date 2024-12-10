@@ -55,10 +55,7 @@ func TestUpdateCounterMetrics(t *testing.T) {
 	}
 }
 
-func TestPrepareReportMetrics(t *testing.T) {
-	metricsCounter := make(map[string]storage.TypeCounter)
-	metricsCounter["PollCount"] = 100
-	metricsCounter["test"] = -1
+func TestPrepareReportGaugeMetrics(t *testing.T) {
 	metricsGauge := make(map[string]storage.TypeGauge)
 	metricsGauge["Alloc"] = 9.1
 	metricsGauge["GCCPUFraction"] = 10.43
@@ -67,9 +64,7 @@ func TestPrepareReportMetrics(t *testing.T) {
 	var expected = []string{
 		fmt.Sprintf("http://%s/update/gauge/Alloc/9.1", serverAdderess),
 		fmt.Sprintf("http://%s/update/gauge/GCCPUFraction/10.43", serverAdderess),
-		fmt.Sprintf("http://%s/update/counter/PollCount/100", serverAdderess),
-		fmt.Sprintf("http://%s/update/counter/test/-1", serverAdderess),
 	}
-	actual := prepareReportMetrics(serverAdderess, metricsGauge, metricsCounter)
+	actual := prepareReportGaugeMetrics(serverAdderess, metricsGauge)
 	assert.ElementsMatch(t, actual, expected)
 }

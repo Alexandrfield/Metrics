@@ -37,7 +37,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 	var err error
 	res := ""
 	if rep.LocalStorage == nil {
-		return res, errors.New("metricRepository has not been initialize.")
+		return res, errors.New("metricRepository has not been initialize")
 	}
 	switch metricType {
 	case "counter":
@@ -55,7 +55,7 @@ func (rep *MetricRepository) GetValue(metricType string, metricName string) (str
 func (rep *MetricRepository) GetAllValue() ([]string, error) {
 	res := make([]string, 0)
 	if rep.LocalStorage == nil {
-		return res, errors.New("metricRepository has not been initialize.")
+		return res, errors.New("metricRepository has not been initialize")
 	}
 	allGaugeKeys, allCounterKeys := rep.LocalStorage.GetAllMetricName()
 	for _, val := range allGaugeKeys {
