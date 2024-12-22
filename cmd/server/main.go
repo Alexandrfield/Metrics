@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 
 	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
 	"github.com/Alexandrfield/Metrics/internal/server"
@@ -12,21 +13,28 @@ import (
 )
 
 func main() {
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatal("Can not initializate zap logger. err:%w", err)
+	}
+	defer zapLogger.Sync()
+	logger := zapLogger.Sugar()
+
 	config := server.GetServerConfig()
 	stor := storage.CreateMemStorage()
 	metricRep := server.MetricRepository{LocalStorage: stor}
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	router := chi.NewRouter()
-	router.Get(`/value/*`, servHandler.GetValue)
-	router.Get(`/`, servHandler.GetAllData)
+	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
+	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
 
-	router.Post(`/update/*`, servHandler.UpdateValue)
-	router.Post(`/update/`, servHandler.DefaultAnswer)
+	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
+	router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
-	log.Println("Server stated")
-	err := http.ListenAndServe(config.ServerAdderess, router)
+	logger.Info("Server stated")
+	err = http.ListenAndServe(config.ServerAdderess, router)
 	if err != nil {
-		log.Fatal("Unexpected error. err:%w", err)
+		logger.Fatal("Unexpected error. err:%s", err)
 	}
 }

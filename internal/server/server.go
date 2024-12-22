@@ -3,9 +3,12 @@ package server
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
 
 	"log"
 
+	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
@@ -67,4 +70,48 @@ func (rep *MetricRepository) GetAllValue() ([]string, error) {
 		res = append(res, fmt.Sprintf("name:%s; value:%s;\n", val, t))
 	}
 	return res, nil
+}
+
+type (
+	responseData struct {
+		status int
+		size   int
+	}
+	loggingResponseWriter struct {
+		http.ResponseWriter
+		responseData *responseData
+	}
+)
+
+func (r *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size // захватываем размер
+	return size, err
+}
+
+func (r *loggingResponseWriter) WriteHeader(statusCode int) {
+	r.ResponseWriter.WriteHeader(statusCode)
+	r.responseData.status = statusCode // захватываем код статуса
+}
+
+func WithLogging(logger common.Loger, h http.Handler) http.HandlerFunc {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		uri := r.RequestURI
+		method := r.Method
+		responseData := &responseData{
+			status: 0,
+			size:   0,
+		}
+		lw := loggingResponseWriter{
+			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
+			responseData:   responseData,
+		}
+		h.ServeHTTP(&lw, r)
+		duration := time.Since(start)
+		logger.Infof("uri:%s; method:%s; status:%s; size:%s; duration:%s;", uri, method, responseData.status, responseData.size, duration)
+
+	}
+	return http.HandlerFunc(logFn)
 }

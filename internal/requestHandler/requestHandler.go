@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"log"
+	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
 type MetricsStorage interface {
@@ -15,6 +15,7 @@ type MetricsStorage interface {
 }
 
 type MetricServer struct {
+	logger     common.Loger
 	memStorage MetricsStorage
 }
 
@@ -36,7 +37,7 @@ func parseURL(req *http.Request) ([]string, int) {
 	return url, http.StatusOK
 }
 func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Request) {
-	log.Printf("defaultAnswer. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
+	rep.logger.Debugf("defaultAnswer. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -44,42 +45,42 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	url, statusH := parseURL(req)
 	if statusH == http.StatusOK {
 		err := rep.memStorage.SetValue(url[2], url[3], url[4])
-		log.Printf("setValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
+		rep.logger.Debugf("setValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 		if err != nil {
-			log.Printf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
+			rep.logger.Debugf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
 			statusH = http.StatusBadRequest
 		}
 	}
 
-	log.Printf("res.WriteHeader:%d\n", statusH)
+	rep.logger.Debugf("res.WriteHeader:%d\n", statusH)
 	res.WriteHeader(statusH)
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	url, statusH := parseURL(req)
 	if statusH == http.StatusOK {
-		log.Printf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
+		rep.logger.Debugf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
 		val, err := rep.memStorage.GetValue(url[2], url[3])
 		if err != nil {
-			log.Printf("issue for res.Write([]byte(val)); err:%s\n", err)
+			rep.logger.Debugf("issue for res.Write([]byte(val)); err:%s\n", err)
 			statusH = http.StatusNotFound
 		} else {
 			res.WriteHeader(statusH)
 			_, err = res.Write([]byte(val))
 			if err != nil {
-				log.Printf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
+				rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
 			}
 			return
 		}
 	}
 
-	log.Printf("res.WriteHeader:%d\n", statusH)
+	rep.logger.Debugf("res.WriteHeader:%d\n", statusH)
 	res.WriteHeader(statusH)
 }
 
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()
 	if err != nil {
-		log.Printf("issue for GetAllData. err:%s\n", err)
+		rep.logger.Debugf("issue for GetAllData. err:%s\n", err)
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,6 +105,6 @@ func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) 
 	res.WriteHeader(http.StatusOK)
 	err = readyTemplate.Execute(res, allValues)
 	if err != nil {
-		log.Printf("issue for readyTemplate.Execute(res, allValues). err:%s\n", err)
+		rep.logger.Debugf("issue for readyTemplate.Execute(res, allValues). err:%s\n", err)
 	}
 }
