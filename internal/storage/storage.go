@@ -3,7 +3,6 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 var errMetricNotExistIssue = errors.New("metric with this name or type is does't exist")
@@ -20,26 +19,18 @@ func CreateMemStorage() *MemStorage {
 	return &MemStorage{gaugeData: make(map[string]TypeGauge), counterData: make(map[string]TypeCounter)}
 }
 
-func (st *MemStorage) AddGauge(name string, raw string) error {
-	value, err := strconv.ParseFloat(raw, 64)
-	if err != nil {
-		return fmt.Errorf("error parse Gauge type. Value:%s; error parse :%w;", raw, err)
-	}
-	st.gaugeData[name] = TypeGauge(value)
+func (st *MemStorage) AddGauge(name string, value TypeGauge) error {
+	st.gaugeData[name] = value
 	return nil
 }
-func (st *MemStorage) GetGauge(name string) (string, error) {
+func (st *MemStorage) GetGauge(name string) (TypeGauge, error) {
 	val, ok := st.gaugeData[name]
 	if !ok {
-		return "", fmt.Errorf("can't find Gauge metric with name:%s;err:%w", name, errMetricNotExistIssue)
+		return TypeGauge(0), fmt.Errorf("can't find Gauge metric with name:%s;err:%w", name, errMetricNotExistIssue)
 	}
-	return strconv.FormatFloat(float64(val), 'f', -1, 64), nil
+	return val, nil
 }
-func (st *MemStorage) AddCounter(name string, raw string) error {
-	value, err := strconv.Atoi(raw)
-	if err != nil {
-		return fmt.Errorf("error parse Counter type. Value:%s; err parse:%w;", raw, err)
-	}
+func (st *MemStorage) AddCounter(name string, value TypeCounter) error {
 	val, ok := st.counterData[name]
 	if !ok {
 		val = 0
@@ -47,12 +38,12 @@ func (st *MemStorage) AddCounter(name string, raw string) error {
 	st.counterData[name] = val + TypeCounter(value)
 	return nil
 }
-func (st *MemStorage) GetCounter(name string) (string, error) {
+func (st *MemStorage) GetCounter(name string) (TypeCounter, error) {
 	val, ok := st.counterData[name]
 	if !ok {
-		return "", fmt.Errorf("can't find Counter metric with name:%s;err:%w", name, errMetricNotExistIssue)
+		return TypeCounter(0), fmt.Errorf("can't find Counter metric with name:%s;err:%w", name, errMetricNotExistIssue)
 	}
-	return strconv.Itoa(int(val)), nil
+	return val, nil
 }
 func (st *MemStorage) GetAllMetricName() ([]string, []string) {
 	allGaugeKeys := make([]string, 0)
