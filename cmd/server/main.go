@@ -26,11 +26,11 @@ func main() {
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	router := chi.NewRouter()
-	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
-	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
+	router.Get(`/value/*`, http.HandlerFunc(server.WithLogging(logger, servHandler.GetValue)))
+	router.Get(`/`, http.HandlerFunc(server.WithLogging(logger, servHandler.GetAllData)))
 
-	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
-	router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
+	router.Post(`/update/*`, http.HandlerFunc(server.WithLogging(logger, servHandler.UpdateValue)))
+	router.Post(`/update/`, http.HandlerFunc(server.WithLogging(logger, servHandler.DefaultAnswer)))
 
 	logger.Info("Server stated")
 	err = http.ListenAndServe(config.ServerAdderess, router)

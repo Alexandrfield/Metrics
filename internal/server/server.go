@@ -18,41 +18,35 @@ type MetricRepository struct {
 	LocalStorage *storage.MemStorage
 }
 
-func (rep *MetricRepository) SetValue(metricType string, metricName string, metricValue string) error {
-	var err error
-	log.Printf("metricType:%s; metricValue:%s\n", metricType, metricValue)
+func (rep *MetricRepository) SetCounterValue(metricName string, metricValue storage.TypeCounter) error {
+	log.Printf("metricName:%s; metricValue:%s\n", metricName, metricValue)
 	if rep.LocalStorage == nil {
 		log.Printf("metricRepository has not been initialize! Create default MemStorage\n")
 		rep.LocalStorage = storage.CreateMemStorage()
 	}
-	switch metricType {
-	case "counter":
-		err = rep.LocalStorage.AddCounter(metricName, metricValue)
-	case "gauge":
-		err = rep.LocalStorage.AddGauge(metricName, metricValue)
-	default:
-		err = fmt.Errorf("unknown type %s;err:%w", metricType, errNotImplementedIssue)
-	}
-	return err
+	return rep.LocalStorage.AddCounter(metricName, metricValue)
 }
 
-func (rep *MetricRepository) GetValue(metricType string, metricName string) (string, error) {
-	var err error
-	res := ""
+func (rep *MetricRepository) SetGaugeValue(metricName string, metricValue storage.TypeGauge) error {
+	log.Printf("metricName:%s; metricValue:%s\n", metricName, metricValue)
 	if rep.LocalStorage == nil {
-		return res, errors.New("metricRepository has not been initialize")
+		log.Printf("metricRepository has not been initialize! Create default MemStorage\n")
+		rep.LocalStorage = storage.CreateMemStorage()
 	}
-	switch metricType {
-	case "counter":
-		log.Printf("counter -> metricName:%s\n", metricName)
-		res, err = rep.LocalStorage.GetCounter(metricName)
-	case "gauge":
-		log.Printf("gauge -> metricName:%s\n", metricName)
-		res, err = rep.LocalStorage.GetGauge(metricName)
-	default:
-		err = fmt.Errorf("unknown type %s; err:%w", metricType, errNotImplementedIssue)
+	return rep.LocalStorage.AddGauge(metricName, metricValue)
+}
+
+func (rep *MetricRepository) GetCounterValue(metricName string) (storage.TypeCounter, error) {
+	if rep.LocalStorage == nil {
+		return storage.TypeCounter(0), errors.New("metricRepository has not been initialize")
 	}
-	return res, err
+	return rep.LocalStorage.GetCounter(metricName)
+}
+func (rep *MetricRepository) GetGaugeValue(metricName string) (storage.TypeGauge, error) {
+	if rep.LocalStorage == nil {
+		return storage.TypeGauge(0), errors.New("metricRepository has not been initialize")
+	}
+	return rep.LocalStorage.GetGauge(metricName)
 }
 
 func (rep *MetricRepository) GetAllValue() ([]string, error) {
@@ -94,7 +88,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func WithLogging(logger common.Loger, h http.Handler) http.HandlerFunc {
+func WithLogging(logger common.Loger, h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 

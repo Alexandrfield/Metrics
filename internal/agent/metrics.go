@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -47,34 +49,50 @@ func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
 func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
 	metrics["PollCount"]++
 }
-func prepareReportGaugeMetrics(serverAdderess string, metricsGauge map[string]storage.TypeGauge) []string {
-	dataMetricForReport := make([]string, 0)
+func prepareReportGaugeMetrics(metricsGauge map[string]storage.TypeGauge) []common.Metrics {
+	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metricsGauge {
-		dataMetricForReport = append(dataMetricForReport,
-			fmt.Sprintf("http://%s/update/gauge/%s/%v", serverAdderess, key, value))
+		temp := float64(value)
+		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "gauge", Value: &temp})
 	}
 	return dataMetricForReport
 }
 
-func reportMetrics(client *http.Client, dataMetricForReport []string, logger common.Loger) {
+func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) []common.Metrics {
+	dataMetricForReport := make([]common.Metrics, 0)
+	for key, value := range metricsCounter {
+		temp := int64(value)
+		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "counter", Delta: &temp})
+	}
+	return dataMetricForReport
+}
+
+func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		_, err := reportMetric(client, metric, logger)
+		_, err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
 }
-func reportMetric(client *http.Client, url string, logger common.Loger) (int, error) {
+func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger) (int, error) {
+	objMetrics, err := json.Marshal(metric)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+	url := fmt.Sprintf("http://%s/update/", serverAdderess)
+
 	req, err := http.NewRequest(
-		http.MethodPost, url, http.NoBody,
+		http.MethodPost, url, bytes.NewBuffer(objMetrics),
 	)
 	if err != nil {
 		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	status := resp.StatusCode
+	defer resp.Body.Close()
 	if err != nil {
 		logger.Warnf("http.NewRequest.Do err: %s\n", err)
 		return status, fmt.Errorf("http.NewRequest.Do err:%w", err)
@@ -83,20 +101,18 @@ func reportMetric(client *http.Client, url string, logger common.Loger) (int, er
 	if err != nil {
 		return status, fmt.Errorf("error reading body. err:%w", err)
 	}
-	_ = resp.Body.Close()
 	return status, nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
-	for key, value := range metricsCounter {
-		url := fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value)
-		statusCode, err := reportMetric(client, url, logger)
+func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics, metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
+	for _, metric := range dataMetricForReport {
+		statusCode, err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
 		}
 		if statusCode == http.StatusOK {
-			metricsCounter[key] = 0
+			metricsCounter[metric.ID] -= storage.TypeCounter(*metric.Delta)
 		}
 	}
 }
@@ -114,9 +130,10 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 			updateGaugeMetrics(metricsGauge)
 			updateCounterMetrics(metricsCounter)
 		case <-tickerReportInterval.C:
-			metricsGaugeReport := prepareReportGaugeMetrics(config.ServerAdderess, metricsGauge)
-			reportMetrics(client, metricsGaugeReport, logger)
-			reportCounterMetrics(client, config.ServerAdderess, metricsCounter, logger)
+			metricsGaugeReport := prepareReportGaugeMetrics(metricsGauge)
+			metricsCounterReport := prepareReportCounterMetrics(metricsCounter)
+			reportMetrics(client, config.ServerAdderess, metricsGaugeReport, logger)
+			reportCounterMetrics(client, config.ServerAdderess, metricsCounterReport, metricsCounter, logger)
 		}
 	}
 }
