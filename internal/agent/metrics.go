@@ -8,8 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"log"
-
+	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
@@ -57,27 +56,27 @@ func prepareReportGaugeMetrics(serverAdderess string, metricsGauge map[string]st
 	return dataMetricForReport
 }
 
-func reportMetrics(client *http.Client, dataMetricForReport []string) {
+func reportMetrics(client *http.Client, dataMetricForReport []string, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		_, err := reportMetric(client, metric)
+		_, err := reportMetric(client, metric, logger)
 		if err != nil {
-			log.Printf("error report metric. err%s\n ", err)
+			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
 }
-func reportMetric(client *http.Client, url string) (int, error) {
+func reportMetric(client *http.Client, url string, logger common.Loger) (int, error) {
 	req, err := http.NewRequest(
 		http.MethodPost, url, http.NoBody,
 	)
 	if err != nil {
-		log.Printf("http.NewRequest. err: %s\n", err)
+		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := client.Do(req)
 	status := resp.StatusCode
 	if err != nil {
-		log.Printf("http.NewRequest.Do err: %s\n", err)
+		logger.Warnf("http.NewRequest.Do err: %s\n", err)
 		return status, fmt.Errorf("http.NewRequest.Do err:%w", err)
 	}
 	_, err = io.Copy(io.Discard, resp.Body)
@@ -88,12 +87,12 @@ func reportMetric(client *http.Client, url string) (int, error) {
 	return status, nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCounter map[string]storage.TypeCounter) {
+func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
 	for key, value := range metricsCounter {
 		url := fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value)
-		statusCode, err := reportMetric(client, url)
+		statusCode, err := reportMetric(client, url, logger)
 		if err != nil {
-			log.Printf("error report metric for counter. err%s\n ", err)
+			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
 		}
 		if statusCode == http.StatusOK {
@@ -101,7 +100,7 @@ func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCou
 		}
 	}
 }
-func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
+func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
 	metricsGauge := make(map[string]storage.TypeGauge)
@@ -116,8 +115,8 @@ func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
 			updateCounterMetrics(metricsCounter)
 		case <-tickerReportInterval.C:
 			metricsGaugeReport := prepareReportGaugeMetrics(config.ServerAdderess, metricsGauge)
-			reportMetrics(client, metricsGaugeReport)
-			reportCounterMetrics(client, config.ServerAdderess, metricsCounter)
+			reportMetrics(client, metricsGaugeReport, logger)
+			reportCounterMetrics(client, config.ServerAdderess, metricsCounter, logger)
 		}
 	}
 }
