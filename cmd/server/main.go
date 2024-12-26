@@ -22,8 +22,8 @@ func main() {
 
 	config := server.GetServerConfig()
 	stor := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: stor, Logger: logger}
-	servHandler := handler.CreateHandlerRepository(&metricRep)
+	metricRep := server.CreateMetricRepository(stor, logger)
+	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 	router := chi.NewRouter()
 	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
@@ -32,7 +32,7 @@ func main() {
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
-	//router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
+	// router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
 	logger.Info("Server stated")
 	err = http.ListenAndServe(config.ServerAdderess, router)

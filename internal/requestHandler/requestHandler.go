@@ -2,6 +2,7 @@ package requesthandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -23,22 +24,27 @@ type MetricServer struct {
 	memStorage MetricsStorage
 }
 
-func parseURL(req *http.Request) ([]string, int) {
+func parseURL(req *http.Request) (common.Metrics, error) {
+	var metric common.Metrics
 	url := strings.Split(req.URL.String(), "/")
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
 	// Content-Type: text/plain
-	if url[1] == "update" && len(url) != 5 {
-		return []string{}, http.StatusNotFound
+	if url[1] == "update" && len(url) == 5 {
+		err := metric.SaveMetric(url[2], url[3], url[4])
+		if err != nil {
+			return metric, fmt.Errorf("issue with parse metric (command update): %w", err)
+		}
 	}
 	// expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
-	if url[1] == "value" && len(url) < 4 {
-		return []string{}, http.StatusBadRequest
+	if url[1] == "value" && len(url) == 4 {
+		metric.MType = url[2]
+		metric.ID = url[3]
 	}
-	return url, http.StatusOK
+	return metric, nil
 }
 
-func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
-	return &MetricServer{memStorage: stor}
+func CreateHandlerRepository(stor MetricsStorage, logger common.Loger) *MetricServer {
+	return &MetricServer{memStorage: stor, logger: logger}
 }
 
 func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Request) {
@@ -70,59 +76,78 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 //		}
 //		res.WriteHeader(statusH)
 //	}
-func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusOK
-	var metric common.Metrics
+func (rep *MetricServer) updateValue(metric *common.Metrics) int {
+	retStatus := http.StatusOK
+	rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d;",
+		metric.MType, metric.ID, metric.Value, metric.Delta)
 	var err error
-	if err = json.NewDecoder(req.Body).Decode(&metric); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-	rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d; err:%s\n",
-		metric.MType, metric.ID, metric.Value, metric.Delta, err)
 	switch metric.MType {
 	case "gauge":
 		err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
-		statusH = http.StatusBadRequest
+		retStatus = http.StatusNotFound
 		rep.logger.Warnf("unknown type:%s", metric.MType)
 	}
 	if err != nil {
-		rep.logger.Warnf("unknown type:%s", metric.MType)
+		retStatus = http.StatusBadRequest
+		rep.logger.Warnf("internal error:%w", err)
 	}
-	res.WriteHeader(statusH)
+	return retStatus
 }
-func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
-	statusH := http.StatusOK
+func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	rep.logger.Debugf("getValue type:%s; name%s; value:%d; delta:%d;", metric.MType, metric.ID, metric.Value, metric.Delta)
+	retStatus := rep.updateValue(&metric)
+	res.WriteHeader(retStatus)
+}
 
-	//	var err error
+func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+	rep.logger.Warnf("start work UpdateValue")
+	fmt.Printf("start work UpdateValue\n")
+	metric, err := parseURL(req)
+	if err != nil {
+		rep.logger.Warnf("problem with parse  uri. err:%w", err)
+	}
+	retStatus := rep.updateValue(&metric)
+	res.WriteHeader(retStatus)
+}
+
+func (rep *MetricServer) getValue(metric *common.Metrics) int {
+	rep.logger.Debugf("getValue type:%s; name%s; value:%d; delta:%d;", metric.MType, metric.ID, metric.Value, metric.Delta)
+	retStatus := http.StatusOK
 	switch metric.MType {
 	case "gauge":
 		val, err := rep.memStorage.GetGaugeValue(metric.ID)
 		temp := float64(val)
 		metric.Value = &temp
 		if err != nil {
-			statusH = http.StatusNotFound
+			retStatus = http.StatusNotFound
 		}
 	case "counter":
 		val, err := rep.memStorage.GetCounterValue(metric.ID)
 		temp := int64(val)
 		metric.Delta = &temp
 		if err != nil {
-			statusH = http.StatusNotFound
+			retStatus = http.StatusNotFound
 		}
 	default:
-		statusH = http.StatusBadRequest
+		retStatus = http.StatusNotFound
 		rep.logger.Warnf("unknown type:%s", metric.MType)
 	}
+	return retStatus
+}
+func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
+	var metric common.Metrics
+	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	retStatus := rep.getValue(&metric)
 
 	resp, err := json.Marshal(metric)
 	if err != nil {
@@ -131,42 +156,25 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 		return
 	}
 	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(statusH)
+	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
 	if err != nil {
 		rep.logger.Warnf("issue with write %w", err)
 	}
 }
-func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	url, statusH := parseURL(req)
-	if statusH == http.StatusOK {
-		err := rep.memStorage.SetValue(url[2], url[3], url[4])
-		rep.logger.Debugf("setValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
-		if err != nil {
-			rep.logger.Debugf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
-			statusH = http.StatusBadRequest
-		}
-	}
-	res.WriteHeader(statusH)
-}
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	url, statusH := parseURL(req)
-	if statusH == http.StatusOK {
-		rep.logger.Debugf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
-		val, err := rep.memStorage.GetValue(url[2], url[3])
-		if err != nil {
-			rep.logger.Debugf("issue for res.Write([]byte(val)); err:%s\n", err)
-			statusH = http.StatusNotFound
-		} else {
-			res.WriteHeader(statusH)
-			_, err = res.Write([]byte(val))
-			if err != nil {
-				rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
-			}
-			return
-		}
+	metric, err := parseURL(req)
+	if err != nil {
+		rep.logger.Warnf("problem with parse  uri. err:%w", err)
 	}
-	res.WriteHeader(statusH)
+
+	retStatus := rep.getValue(&metric)
+
+	res.WriteHeader(retStatus)
+	_, err = res.Write([]byte(metric.GetValueMetric()))
+	if err != nil {
+		rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", metric.MType, metric.ID, err)
+	}
 }
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()

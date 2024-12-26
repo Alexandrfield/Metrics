@@ -10,11 +10,13 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-// var errNotImplementedIssue = errors.New("not supported")
-
 type MetricRepository struct {
 	Logger       common.Loger
 	LocalStorage *storage.MemStorage
+}
+
+func CreateMetricRepository(localStorage *storage.MemStorage, logger common.Loger) MetricRepository {
+	return MetricRepository{Logger: logger, LocalStorage: localStorage}
 }
 
 func (rep *MetricRepository) SetCounterValue(metricName string, metricValue storage.TypeCounter) error {
@@ -95,7 +97,7 @@ type (
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
 	r.responseData.size += size // захватываем размер
-	return size, err
+	return size, fmt.Errorf("%w", err)
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
