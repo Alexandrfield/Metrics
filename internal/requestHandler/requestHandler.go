@@ -111,6 +111,7 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	metric, err := parseURL(req)
 	if err != nil {
 		rep.logger.Warnf("problem with parse  uri. err:%w", err)
+		res.WriteHeader(http.StatusBadRequest)
 	}
 	retStatus := rep.updateValue(&metric)
 	res.WriteHeader(retStatus)

@@ -15,18 +15,20 @@ import (
 )
 
 func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Printf("Rcovert. Panic occurred: %w\n", err)
-			debug.PrintStack()
-		}
-	}()
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatal("Can not initializate zap logger. err:%w", err)
 	}
 	defer func() { _ = zapLogger.Sync() }()
 	logger := zapLogger.Sugar()
+
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("Rcovert. Panic occurred:\n")
+			fmt.Println(err)
+			debug.PrintStack()
+		}
+	}()
 
 	config := server.GetServerConfig()
 	stor := storage.CreateMemStorage()
