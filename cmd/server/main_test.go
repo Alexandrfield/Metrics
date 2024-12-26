@@ -70,6 +70,14 @@ func TestUpdateValue(t *testing.T) {
 				contentType: "plain/text",
 			},
 		},
+		{
+			name:    "negativ test #6",
+			request: "/update/unknown/testCounter/100",
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "plain/text",
+			},
+		},
 	}
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {

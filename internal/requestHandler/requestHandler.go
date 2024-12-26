@@ -2,7 +2,6 @@ package requesthandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -24,23 +23,32 @@ type MetricServer struct {
 	memStorage MetricsStorage
 }
 
-func parseURL(req *http.Request) (common.Metrics, error) {
+func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
 	var metric common.Metrics
 	url := strings.Split(req.URL.String(), "/")
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
 	// Content-Type: text/plain
-	if url[1] == "update" && len(url) == 5 {
+	if url[1] == "update" {
+		if len(url) != 5 {
+			return metric, http.StatusBadRequest
+		}
 		err := metric.SaveMetric(url[2], url[3], url[4])
 		if err != nil {
-			return metric, fmt.Errorf("issue with parse metric (command update): %w", err)
+			logger.Debugf("issue with parse metric (command update): %w", err)
+			return metric, http.StatusNotFound
 		}
+		return metric, http.StatusOK
 	}
 	// expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
-	if url[1] == "value" && len(url) == 4 {
+	if url[1] == "value" {
+		if len(url) != 4 {
+			return metric, http.StatusBadRequest
+		}
 		metric.MType = url[2]
 		metric.ID = url[3]
+		return metric, http.StatusOK
 	}
-	return metric, nil
+	return metric, http.StatusBadRequest
 }
 
 func CreateHandlerRepository(stor MetricsStorage, logger common.Loger) *MetricServer {
@@ -63,7 +71,8 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
-		retStatus = http.StatusNotFound
+		//retStatus = http.StatusNotFound
+		retStatus = http.StatusBadRequest
 		rep.logger.Debugf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
@@ -83,13 +92,10 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	metric, err := parseURL(req)
-	if err != nil {
-		rep.logger.Debugf("problem with parse  uri. err:%w", err)
-		res.WriteHeader(http.StatusBadRequest)
-		return
+	metric, retStatus := parseURL(req, rep.logger)
+	if retStatus == http.StatusOK {
+		retStatus = rep.updateValue(&metric)
 	}
-	retStatus := rep.updateValue(&metric)
 	res.WriteHeader(retStatus)
 }
 
@@ -139,17 +145,16 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	metric, err := parseURL(req)
-	if err != nil {
-		rep.logger.Debugf("problem with parse  uri. err:%w", err)
-		res.WriteHeader(http.StatusBadRequest)
+	metric, retStatus := parseURL(req, rep.logger)
+	if retStatus != http.StatusOK {
+		res.WriteHeader(retStatus)
 		return
 	}
 
-	retStatus := rep.getValue(&metric)
+	retStatus = rep.getValue(&metric)
 
 	res.WriteHeader(retStatus)
-	_, err = res.Write([]byte(metric.GetValueMetric()))
+	_, err := res.Write([]byte(metric.GetValueMetric()))
 	if err != nil {
 		rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", metric.MType, metric.ID, err)
 	}
