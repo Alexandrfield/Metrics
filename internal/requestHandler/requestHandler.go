@@ -63,7 +63,7 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
-		retStatus = http.StatusBadRequest
+		retStatus = http.StatusNotFound
 		rep.logger.Debugf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
@@ -112,7 +112,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 			retStatus = http.StatusNotFound
 		}
 	default:
-		retStatus = http.StatusBadRequest
+		retStatus = http.StatusNotFound
 		rep.logger.Warnf("unknown type:%s;", metric.MType)
 	}
 	return retStatus
