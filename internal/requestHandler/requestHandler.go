@@ -78,7 +78,7 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 //	}
 func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	retStatus := http.StatusOK
-	rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d;",
+	rep.logger.Debugf("setValue type:%s; name: %s; value:%d; delta:%d;",
 		metric.MType, metric.ID, metric.Value, metric.Delta)
 	var err error
 	switch metric.MType {
@@ -107,11 +107,11 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	rep.logger.Debugf("UpdateValue--> n")
 	metric, err := parseURL(req)
 	if err != nil {
-		rep.logger.Warnf("problem with parse  uri. err:%w", err)
+		rep.logger.Debugf("problem with parse  uri. err:%w", err)
 		res.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	retStatus := rep.updateValue(&metric)
 	res.WriteHeader(retStatus)
@@ -163,10 +163,11 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	rep.logger.Debugf("GetValue--> n")
 	metric, err := parseURL(req)
 	if err != nil {
-		rep.logger.Warnf("problem with parse  uri. err:%w", err)
+		rep.logger.Debugf("problem with parse  uri. err:%w", err)
+		res.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	retStatus := rep.getValue(&metric)
