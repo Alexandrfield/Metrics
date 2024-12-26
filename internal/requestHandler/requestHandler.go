@@ -52,30 +52,6 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
-//	func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-//		statusH := http.StatusOK
-//		var metric common.Metrics
-//		var err error
-//		if err = json.NewDecoder(req.Body).Decode(&metric); err != nil {
-//			http.Error(res, err.Error(), http.StatusBadRequest)
-//			return
-//		}
-//		rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d; err:%s\n",
-//			metric.MType, metric.ID, metric.Value, metric.Delta, err)
-//		switch metric.MType {
-//		case "gauge":
-//			err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
-//		case "counter":
-//			err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
-//		default:
-//			statusH = http.StatusBadRequest
-//			rep.logger.Warnf("unknown type:%s", metric.MType)
-//		}
-//		if err != nil {
-//			rep.logger.Warnf("unknown type:%s", metric.MType)
-//		}
-//		res.WriteHeader(statusH)
-//	}
 func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	retStatus := http.StatusOK
 	rep.logger.Debugf("setValue type:%s; name: %s; value:%d; delta:%d;",
@@ -87,12 +63,12 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
-		retStatus = http.StatusNotFound
-		rep.logger.Warnf("unknown type:%s;", metric.MType)
+		retStatus = http.StatusBadRequest
+		rep.logger.Debugf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
 		retStatus = http.StatusBadRequest
-		rep.logger.Warnf("internal error:%w", err)
+		rep.logger.Debugf("internal error:%w", err)
 	}
 	return retStatus
 }
@@ -136,7 +112,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 			retStatus = http.StatusNotFound
 		}
 	default:
-		retStatus = http.StatusNotFound
+		retStatus = http.StatusBadRequest
 		rep.logger.Warnf("unknown type:%s;", metric.MType)
 	}
 	return retStatus
@@ -159,7 +135,7 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
 	if err != nil {
-		rep.logger.Warnf("issue with write %w", err)
+		rep.logger.Debugf("issue with write %w", err)
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
