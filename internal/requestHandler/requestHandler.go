@@ -39,7 +39,8 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d; err:%s\n", metric.MType, metric.ID, metric.Value, metric.Delta, err)
+	rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d; err:%s\n",
+		metric.MType, metric.ID, metric.Value, metric.Delta, err)
 	switch metric.MType {
 	case "gauge":
 		err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
@@ -92,7 +93,10 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	}
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(statusH)
-	res.Write(resp)
+	_, err = res.Write(resp)
+	if err != nil {
+		rep.logger.Warnf("issue with write %w", err)
+	}
 }
 
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {

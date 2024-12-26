@@ -67,7 +67,8 @@ func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) 
 	return dataMetricForReport
 }
 
-func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics, logger common.Loger) {
+func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+	logger common.Loger) {
 	for _, metric := range dataMetricForReport {
 		_, err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
@@ -75,10 +76,11 @@ func reportMetrics(client *http.Client, serverAdderess string, dataMetricForRepo
 		}
 	}
 }
-func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger) (int, error) {
+func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics,
+	logger common.Loger) (int, error) {
 	objMetrics, err := json.Marshal(metric)
 	if err != nil {
-		return http.StatusBadRequest, err
+		return http.StatusBadRequest, fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
 	url := fmt.Sprintf("http://%s/update/", serverAdderess)
 
@@ -104,7 +106,8 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	return status, nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics, metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
+func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+	metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
 		statusCode, err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {

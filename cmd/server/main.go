@@ -22,7 +22,7 @@ func main() {
 
 	config := server.GetServerConfig()
 	stor := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: stor}
+	metricRep := server.MetricRepository{LocalStorage: stor, Logger: logger}
 	servHandler := handler.CreateHandlerRepository(&metricRep)
 
 	router := chi.NewRouter()
@@ -37,4 +37,5 @@ func main() {
 	if err != nil {
 		logger.Fatal("Unexpected error. err:%s", err)
 	}
+	logger.Info("Server stoped")
 }
