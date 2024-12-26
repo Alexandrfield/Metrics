@@ -88,7 +88,7 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
 		retStatus = http.StatusNotFound
-		rep.logger.Warnf("unknown type:%s", metric.MType)
+		rep.logger.Warnf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
 		retStatus = http.StatusBadRequest
@@ -107,8 +107,7 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	rep.logger.Warnf("start work UpdateValue")
-	fmt.Printf("start work UpdateValue\n")
+	rep.logger.Debugf("UpdateValue--> n")
 	metric, err := parseURL(req)
 	if err != nil {
 		rep.logger.Warnf("problem with parse  uri. err:%w", err)
@@ -137,7 +136,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 		}
 	default:
 		retStatus = http.StatusNotFound
-		rep.logger.Warnf("unknown type:%s", metric.MType)
+		rep.logger.Warnf("unknown type:%s;", metric.MType)
 	}
 	return retStatus
 }
@@ -163,6 +162,7 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
+	rep.logger.Debugf("GetValue--> n")
 	metric, err := parseURL(req)
 	if err != nil {
 		rep.logger.Warnf("problem with parse  uri. err:%w", err)
