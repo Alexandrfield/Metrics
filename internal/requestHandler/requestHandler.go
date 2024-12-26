@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/Alexandrfield/Metrics/internal/storage"
@@ -22,6 +23,20 @@ type MetricServer struct {
 	memStorage MetricsStorage
 }
 
+func parseURL(req *http.Request) ([]string, int) {
+	url := strings.Split(req.URL.String(), "/")
+	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
+	// Content-Type: text/plain
+	if url[1] == "update" && len(url) != 5 {
+		return []string{}, http.StatusNotFound
+	}
+	// expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
+	if url[1] == "value" && len(url) < 4 {
+		return []string{}, http.StatusBadRequest
+	}
+	return url, http.StatusOK
+}
+
 func CreateHandlerRepository(stor MetricsStorage) *MetricServer {
 	return &MetricServer{memStorage: stor}
 }
@@ -31,7 +46,31 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
-func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+//	func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+//		statusH := http.StatusOK
+//		var metric common.Metrics
+//		var err error
+//		if err = json.NewDecoder(req.Body).Decode(&metric); err != nil {
+//			http.Error(res, err.Error(), http.StatusBadRequest)
+//			return
+//		}
+//		rep.logger.Debugf("setValue type:%s; name%s; value:%d; delta:%d; err:%s\n",
+//			metric.MType, metric.ID, metric.Value, metric.Delta, err)
+//		switch metric.MType {
+//		case "gauge":
+//			err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
+//		case "counter":
+//			err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
+//		default:
+//			statusH = http.StatusBadRequest
+//			rep.logger.Warnf("unknown type:%s", metric.MType)
+//		}
+//		if err != nil {
+//			rep.logger.Warnf("unknown type:%s", metric.MType)
+//		}
+//		res.WriteHeader(statusH)
+//	}
+func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusOK
 	var metric common.Metrics
 	var err error
@@ -55,7 +94,7 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	}
 	res.WriteHeader(statusH)
 }
-func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
+func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
 	statusH := http.StatusOK
 	var metric common.Metrics
 	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
@@ -98,7 +137,37 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 		rep.logger.Warnf("issue with write %w", err)
 	}
 }
-
+func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+	url, statusH := parseURL(req)
+	if statusH == http.StatusOK {
+		err := rep.memStorage.SetValue(url[2], url[3], url[4])
+		rep.logger.Debugf("setValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
+		if err != nil {
+			rep.logger.Debugf("issue for updateValue type:%s; name%s; value:%s; err:%s\n", url[2], url[3], url[4], err)
+			statusH = http.StatusBadRequest
+		}
+	}
+	res.WriteHeader(statusH)
+}
+func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
+	url, statusH := parseURL(req)
+	if statusH == http.StatusOK {
+		rep.logger.Debugf("GetValue(url[2], url[3])> %s, %s\n", url[2], url[3])
+		val, err := rep.memStorage.GetValue(url[2], url[3])
+		if err != nil {
+			rep.logger.Debugf("issue for res.Write([]byte(val)); err:%s\n", err)
+			statusH = http.StatusNotFound
+		} else {
+			res.WriteHeader(statusH)
+			_, err = res.Write([]byte(val))
+			if err != nil {
+				rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", url[2], url[3], err)
+			}
+			return
+		}
+	}
+	res.WriteHeader(statusH)
+}
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()
 	if err != nil {

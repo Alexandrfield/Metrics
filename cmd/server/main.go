@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Can not initializate zap logger. err:%w", err)
 	}
-	defer zapLogger.Sync()
+	defer func() { _ = zapLogger.Sync() }()
 	logger := zapLogger.Sugar()
 
 	config := server.GetServerConfig()
@@ -27,10 +27,12 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
+	router.Get(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
 	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
-	router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
+	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
+	//router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
 	logger.Info("Server stated")
 	err = http.ListenAndServe(config.ServerAdderess, router)

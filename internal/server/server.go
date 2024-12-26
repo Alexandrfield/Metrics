@@ -10,7 +10,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-//var errNotImplementedIssue = errors.New("not supported")
+// var errNotImplementedIssue = errors.New("not supported")
 
 type MetricRepository struct {
 	Logger       common.Loger
@@ -119,7 +119,7 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 		}
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
-		logger.Infof("uri:%s; method:%s; status:%s; size:%s; duration:%s;",
+		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",
 			uri, method, responseData.status, responseData.size, duration)
 	}
 	return http.HandlerFunc(logFn)

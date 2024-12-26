@@ -17,7 +17,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Can not initializate zap logger. err:%w", err)
 	}
-	defer zapLogger.Sync()
+	defer func() { _ = zapLogger.Sync() }()
 	logger := zapLogger.Sugar()
 
 	agentConfig := agent.GetAgentConfig()

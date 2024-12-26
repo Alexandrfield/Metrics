@@ -35,7 +35,7 @@ func (st *MemStorage) AddCounter(name string, value TypeCounter) error {
 	if !ok {
 		val = 0
 	}
-	st.counterData[name] = val + TypeCounter(value)
+	st.counterData[name] = val + value
 	return nil
 }
 func (st *MemStorage) GetCounter(name string) (TypeCounter, error) {
