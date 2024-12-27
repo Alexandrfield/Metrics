@@ -82,7 +82,9 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 }
 func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+	body := req.Body
+	rep.logger.Debugf("UpdateJSONValue body:%v", body)
+	if err := json.NewDecoder(body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -124,7 +126,9 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 }
 func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	if err := json.NewDecoder(req.Body).Decode(&metric); err != nil {
+	body := req.Body
+	rep.logger.Debugf("GetJSONValue body:%v", body)
+	if err := json.NewDecoder(body).Decode(&metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
