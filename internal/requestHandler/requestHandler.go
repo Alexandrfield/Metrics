@@ -88,6 +88,8 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+	rep.logger.Debugf("UpdateJSONValue json type:%s; name: %s; value:%d; delta:%d;",
+		metric.MType, metric.ID, metric.Value, metric.Delta)
 	retStatus := rep.updateValue(&metric)
 	res.WriteHeader(retStatus)
 }
@@ -132,6 +134,8 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
+	rep.logger.Debugf("GetJSONValue json type:%s; name: %s; value:%d; delta:%d;",
+		metric.MType, metric.ID, metric.Value, metric.Delta)
 	retStatus := rep.getValue(&metric)
 
 	resp, err := json.Marshal(metric)
