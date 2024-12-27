@@ -30,7 +30,7 @@ func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
 	// Content-Type: text/plain
 	if url[1] == "update" {
 		if len(url) != 5 {
-			return metric, http.StatusBadRequest
+			return metric, http.StatusNotFound
 		}
 		err := metric.SaveMetric(url[2], url[3], url[4])
 		if err != nil {
@@ -42,13 +42,13 @@ func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
 	// expected format http://<АДРЕС_СЕРВЕРА>/value/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>
 	if url[1] == "value" {
 		if len(url) != 4 {
-			return metric, http.StatusBadRequest
+			return metric, http.StatusNotFound
 		}
 		metric.MType = url[2]
 		metric.ID = url[3]
 		return metric, http.StatusOK
 	}
-	return metric, http.StatusBadRequest
+	return metric, http.StatusNotFound
 }
 
 func CreateHandlerRepository(stor MetricsStorage, logger common.Loger) *MetricServer {
@@ -71,7 +71,6 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
 	default:
-		//retStatus = http.StatusNotFound
 		retStatus = http.StatusBadRequest
 		rep.logger.Debugf("unknown type:%s;", metric.MType)
 	}
