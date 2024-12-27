@@ -37,7 +37,7 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
-	router.Get(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
+	router.Post(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
 	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))

@@ -139,12 +139,12 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	retStatus := rep.getValue(&metric)
 
 	resp, err := json.Marshal(metric)
+	res.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		rep.logger.Warnf("problem with unmarshal:%w", err)
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
 	if err != nil {
