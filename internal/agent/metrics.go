@@ -94,8 +94,9 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Warnf("http.NewRequest.Do err: %s\n", err)
-		return 0, fmt.Errorf("http.NewRequest.Do err:%w", err)
+		logger.Debugf("http.NewRequest.Do err: %s\n", err)
+		//logger.Warnf("http.NewRequest.Do err: %s\n", err)
+		//return 0, fmt.Errorf("http.NewRequest.Do err:%w", err)
 	}
 	status := resp.StatusCode
 	defer func() {
