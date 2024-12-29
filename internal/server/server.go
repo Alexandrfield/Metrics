@@ -1,9 +1,12 @@
 package server
 
 import (
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
@@ -115,6 +118,18 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 			status: 0,
 			size:   0,
 		}
+		contetntType := r.Header.Get("Content-Type")
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && (strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
+			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+			if err != nil {
+				io.WriteString(w, err.Error())
+				logger.Debugf("gzip.NewWriterLevel error:%w", err)
+			}
+			defer gz.Close()
+
+			w.Header().Set("Content-Encoding", "gzip")
+		}
+
 		lw := loggingResponseWriter{
 			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
 			responseData:   responseData,
