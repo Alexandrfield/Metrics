@@ -123,26 +123,35 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 		logger.Debugf("test gzip->%s!", contetntType)
 		logger.Debugf("test Get(Accept-Encoding)->%s!", r.Header.Get("Accept-Encoding"))
 		logger.Debugf("test Get(Content-Encoding)->%s!", r.Header.Get("Content-Encoding"))
+		var lw loggingResponseWriter
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") &&
 			(strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
 			logger.Debugf("try use gzip!")
-			w.Header().Set("Content-Encoding", "gzip")
 			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 			if err != nil {
 				_, _ = io.WriteString(w, err.Error())
 				logger.Debugf("gzip.NewWriterLevel error:%w", err)
 			}
+			w.Header().Set("Content-Encoding", "gzip")
 			defer func() {
 				_ = gz.Close()
 			}()
+			lw = loggingResponseWriter{
+				ResponseWriter: gzipWriter{ResponseWriter: w, Writer: gz}, // встраиваем оригинальный http.ResponseWriter
+				responseData:   responseData,
+			}
 		} else {
 			logger.Debugf("not use gzip")
+			lw = loggingResponseWriter{
+				ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
+				responseData:   responseData,
+			}
 		}
 
-		lw := loggingResponseWriter{
-			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
-			responseData:   responseData,
-		}
+		// lw := loggingResponseWriter{
+		// 	ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
+		// 	responseData:   responseData,
+		// }
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",
