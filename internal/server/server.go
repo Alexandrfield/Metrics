@@ -124,8 +124,8 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 		logger.Debugf("test Get(Accept-Encoding)->%s!", r.Header.Get("Accept-Encoding"))
 		logger.Debugf("test Get(Content-Encoding)->%s!", r.Header.Get("Content-Encoding"))
 		var lw loggingResponseWriter
-		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") &&
-			(strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") { // &&
+			//(strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
 			logger.Debugf("try use gzip!")
 			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 			if err != nil {
