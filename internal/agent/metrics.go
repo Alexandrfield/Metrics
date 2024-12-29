@@ -91,6 +91,8 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := client.Do(req)
 	if err != nil {

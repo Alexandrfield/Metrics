@@ -120,6 +120,7 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 		}
 		contetntType := r.Header.Get("Content-Type")
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") && (strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
+			logger.Debugf("try use gzip!")
 			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 			if err != nil {
 				io.WriteString(w, err.Error())
@@ -128,6 +129,8 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 			defer gz.Close()
 
 			w.Header().Set("Content-Encoding", "gzip")
+		} else {
+			logger.Debugf("not use gzip")
 		}
 
 		lw := loggingResponseWriter{
