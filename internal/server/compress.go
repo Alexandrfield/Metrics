@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -11,5 +12,9 @@ type gzipWriter struct {
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
+	n, err := w.Writer.Write(b)
+	if err != nil {
+		err = fmt.Errorf("gzipWriter write:%w", err)
+	}
+	return n, err
 }
