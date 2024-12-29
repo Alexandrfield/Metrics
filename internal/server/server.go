@@ -1,9 +1,12 @@
 package server
 
 import (
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
@@ -116,30 +119,23 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 			size:   0,
 		}
 
-		// switch response.Header.Get("Content-Encoding") {
-		// case "gzip":
-		// 	reader, err = gzip.NewReader(response.Body)
-		// 	defer reader.Close()
-		// default:
-		// 	reader = response.Body
-		// }
-
-		// contetntType := r.Header.Get("Content-Type")
-		// if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") &&
-		// 	(strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
-		// 	logger.Debugf("try use gzip!")
-		// 	w.Header().Set("Content-Encoding", "gzip")
-		// 	gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-		// 	if err != nil {
-		// 		_, _ = io.WriteString(w, err.Error())
-		// 		logger.Debugf("gzip.NewWriterLevel error:%w", err)
-		// 	}
-		// 	defer func() {
-		// 		_ = gz.Close()
-		// 	}()
-		// } else {
-		// 	logger.Debugf("not use gzip")
-		// }
+		contetntType := r.Header.Get("Content-Type")
+		logger.Debugf("test gzip->%s!", contetntType)
+		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") &&
+			(strings.Contains(contetntType, "application/json") || strings.Contains(contetntType, "text/html")) {
+			logger.Debugf("try use gzip!")
+			w.Header().Set("Content-Encoding", "gzip")
+			gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+			if err != nil {
+				_, _ = io.WriteString(w, err.Error())
+				logger.Debugf("gzip.NewWriterLevel error:%w", err)
+			}
+			defer func() {
+				_ = gz.Close()
+			}()
+		} else {
+			logger.Debugf("not use gzip")
+		}
 
 		lw := loggingResponseWriter{
 			ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
