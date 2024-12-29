@@ -72,7 +72,7 @@ func reportMetrics(client *http.Client, serverAdderess string, dataMetricForRepo
 	for _, metric := range dataMetricForReport {
 		_, err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
-			logger.Warnf("error report metric. err%s\n ", err)
+			logger.Debugf("error report metric. err%s\n ", err)
 		}
 	}
 }
@@ -91,8 +91,8 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("Content-Encoding", "gzip")
+	//req.Header.Set("Accept-Encoding", "gzip")
+	//req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := client.Do(req)
 	if err != nil {
