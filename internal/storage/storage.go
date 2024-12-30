@@ -87,7 +87,7 @@ func (st *MemStorage) LoadMemStorage(stream io.Reader) {
 	data := make([]byte, 1000)
 	for {
 		n, err := stream.Read(data)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		rawData := string(data[:n])
