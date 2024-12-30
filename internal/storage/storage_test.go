@@ -6,10 +6,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestAddGaugePositiv(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	tests := []struct {
 		name   string
@@ -46,9 +56,18 @@ func TestAddGaugePositiv(t *testing.T) {
 	}
 }
 func TestAddGaugeNegativ(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
-	err := memStorage.AddGauge("test1", 23)
+	err = memStorage.AddGauge("test1", 23)
 	if err != nil {
 		t.Errorf("Error for test; err:%s\n", err)
 		return
@@ -59,7 +78,16 @@ func TestAddGaugeNegativ(t *testing.T) {
 }
 
 func TestAddCounterPositiv(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	tests := []struct {
 		name   string
@@ -97,9 +125,18 @@ func TestAddCounterPositiv(t *testing.T) {
 	}
 }
 func TestAddCounterNegativ(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
-	err := memStorage.AddCounter("test1", 23)
+	err = memStorage.AddCounter("test1", 23)
 	if err != nil {
 		t.Errorf("Error for test; err:%s\n", err)
 		return
@@ -111,7 +148,16 @@ func TestAddCounterNegativ(t *testing.T) {
 }
 
 func TestGetAllMetricName(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	testsGauge := []struct {
 		name  string

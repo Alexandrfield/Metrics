@@ -102,8 +102,9 @@ func TestUpdateValue(t *testing.T) {
 	}
 	defer func() { _ = zapLogger.Sync() }()
 	logger := zapLogger.Sugar()
-
-	store := storage.CreateMemStorage()
+	done := make(chan struct{})
+	storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	store := storage.CreateMemStorage(storageConfig, logger, done)
 	metricRep := server.CreateMetricRepository(store, logger)
 	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
@@ -131,7 +132,10 @@ func TestDefaultAnswer(t *testing.T) {
 	defer func() { _ = zapLogger.Sync() }()
 	logger := zapLogger.Sugar()
 
-	store := storage.CreateMemStorage()
+	done := make(chan struct{})
+	storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	store := storage.CreateMemStorage(storageConfig, logger, done)
+
 	metricRep := server.CreateMetricRepository(store, logger)
 	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
@@ -171,7 +175,9 @@ func TestParserURL(t *testing.T) {
 			defer func() { _ = zapLogger.Sync() }()
 			logger := zapLogger.Sugar()
 
-			store := storage.CreateMemStorage()
+			done := make(chan struct{})
+			storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+			store := storage.CreateMemStorage(storageConfig, logger, done)
 			metricRep := server.CreateMetricRepository(store, logger)
 			servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -31,7 +32,13 @@ func main() {
 	}()
 
 	config := server.GetServerConfig()
-	stor := storage.CreateMemStorage()
+	done := make(chan struct{})
+	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
+		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore}
+	stor := storage.CreateMemStorage(storageConfig, logger, done)
+	if stor == nil {
+		logger.Fatal("Can not create MemStorage. err:%s", err)
+	}
 	metricRep := server.CreateMetricRepository(stor, logger)
 	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
@@ -44,10 +51,15 @@ func main() {
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
 	// router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
-	logger.Info("Server stated")
+	logger.Info("Server started")
+	defer func() {
+		logger.Info("Server stoping ... ")
+		close(done)
+		time.Sleep(1 * time.Second)
+		logger.Info("Server stoped")
+	}()
 	err = http.ListenAndServe(config.ServerAdderess, router)
 	if err != nil {
 		logger.Fatal("Unexpected error. err:%s", err)
 	}
-	logger.Info("Server stoped")
 }

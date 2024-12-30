@@ -25,8 +25,7 @@ func CreateMetricRepository(localStorage *storage.MemStorage, logger common.Loge
 func (rep *MetricRepository) SetCounterValue(metricName string, metricValue storage.TypeCounter) error {
 	rep.Logger.Debugf("metricName:%s; metricValue:%s", metricName, metricValue)
 	if rep.LocalStorage == nil {
-		rep.Logger.Debugf("metricRepository has not been initialize! Create default MemStorage\n")
-		rep.LocalStorage = storage.CreateMemStorage()
+		return errors.New("localStorage for repository not init")
 	}
 	err := rep.LocalStorage.AddCounter(metricName, metricValue)
 	if err != nil {
@@ -38,8 +37,7 @@ func (rep *MetricRepository) SetCounterValue(metricName string, metricValue stor
 func (rep *MetricRepository) SetGaugeValue(metricName string, metricValue storage.TypeGauge) error {
 	rep.Logger.Debugf("metricName:%s; metricValue:%s\n", metricName, metricValue)
 	if rep.LocalStorage == nil {
-		rep.Logger.Debugf("metricRepository has not been initialize! Create default MemStorage\n")
-		rep.LocalStorage = storage.CreateMemStorage()
+		return errors.New("localStorage for repository not init")
 	}
 	err := rep.LocalStorage.AddGauge(metricName, metricValue)
 	if err != nil {
