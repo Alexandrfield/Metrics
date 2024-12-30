@@ -14,7 +14,7 @@ func parseFlags(config *Config) {
 		"path to file for save metrics [default:localStorage.dat]")
 	flag.IntVar(&config.StoreIntervalSecond, "i", 300,
 		"interval in seconds for save results on disk [default:300]")
-	flag.BoolVar(&config.Restore, "r", false,
+	flag.BoolVar(&config.Restore, "r", true,
 		"bool param if we need read exists file with  metrics [default:true]")
 	flag.Parse()
 

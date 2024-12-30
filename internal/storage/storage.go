@@ -28,7 +28,7 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) *M
 		counterData: make(map[string]TypeCounter), logger: logger, Config: config}
 	logger.Debugf("config.Restore %s", config.Restore)
 	if config.Restore {
-		file, err := os.OpenFile(memStorage.Config.FileStoregePath, os.O_RDONLY, 0o666)
+		file, err := os.OpenFile(memStorage.Config.FileStoregePath, os.O_RDONLY, 0o600)
 		if err == nil {
 			memStorage.logger.Debugf("Issue with restore info from file %s %w", memStorage.Config.FileStoregePath, err)
 			defer func() {
