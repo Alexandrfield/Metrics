@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -53,7 +56,10 @@ func main() {
 	// router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
 	logger.Info("Server started")
-	defer func() {
+	go func() {
+		osSignals := make(chan os.Signal, 1)
+		signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+		<-osSignals
 		logger.Info("Server stoping ... ")
 		close(done)
 		time.Sleep(1 * time.Second)
