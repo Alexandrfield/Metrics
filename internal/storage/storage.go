@@ -25,7 +25,7 @@ type MemStorage struct {
 
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) *MemStorage {
 	memStorage := MemStorage{gaugeData: make(map[string]TypeGauge),
-		counterData: make(map[string]TypeCounter), logger: logger}
+		counterData: make(map[string]TypeCounter), logger: logger, Config: config}
 	logger.Debugf("config.Restore %s", config.Restore)
 	if config.Restore {
 		file, err := os.OpenFile(memStorage.Config.FileStoregePath, os.O_RDONLY, 0o600)
@@ -107,6 +107,7 @@ func (st *MemStorage) LoadMemStorage(stream io.Reader) {
 func (st *MemStorage) AddGauge(name string, value TypeGauge) error {
 	st.gaugeData[name] = value
 	if st.Config.StoreIntervalSecond == 0 {
+		st.logger.Debugf("----->%v", st.Config.StoreIntervalSecond)
 		st.saveMemStorageInFile(st.Config.FileStoregePath)
 	}
 	return nil
