@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -76,6 +77,7 @@ func reportMetrics(client *http.Client, serverAdderess string, dataMetricForRepo
 		}
 	}
 }
+
 func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics,
 	logger common.Loger) (int, error) {
 	objMetrics, err := json.Marshal(metric)
@@ -83,6 +85,15 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 		return http.StatusBadRequest, fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
 	url := fmt.Sprintf("http://%s/update/", serverAdderess)
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(objMetrics); err != nil {
+		return http.StatusBadRequest, fmt.Errorf("problem with compress. err:%w", err)
+	}
+	if err = g.Close(); err != nil {
+		return http.StatusBadRequest, fmt.Errorf("problem with  close compress writer. err:%w", err)
+	}
 
 	req, err := http.NewRequest(
 		http.MethodPost, url, bytes.NewBuffer(objMetrics),
@@ -92,7 +103,7 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", "gzip")
-	// req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := client.Do(req)
 	if err != nil {
