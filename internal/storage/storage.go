@@ -40,7 +40,7 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) *M
 		}
 	}
 	if config.StoreIntervalSecond != 0 {
-		go storageSaver(&memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
+		//go storageSaver(&memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
 	}
 	return &memStorage
 }
