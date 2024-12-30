@@ -33,7 +33,7 @@ func main() {
 
 	config := server.GetServerConfig()
 	done := make(chan struct{})
-	fmt.Println(config)
+	logger.Debugf("config file: %v", config)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
 		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)
