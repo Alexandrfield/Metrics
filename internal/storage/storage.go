@@ -29,14 +29,15 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) *M
 	logger.Debugf("config.Restore %s", config.Restore)
 	if config.Restore {
 		file, err := os.OpenFile(memStorage.Config.FileStoregePath, os.O_RDONLY, 0o666)
-		if err != nil {
+		if err == nil {
 			memStorage.logger.Debugf("Issue with restore info from file %s %w", memStorage.Config.FileStoregePath, err)
-			return nil
+			defer func() {
+				_ = file.Close()
+			}()
+			memStorage.LoadMemStorage(file)
+		} else {
+			logger.Debugf("can not restore file. File is not exist")
 		}
-		defer func() {
-			_ = file.Close()
-		}()
-		memStorage.LoadMemStorage(file)
 	}
 	if config.StoreIntervalSecond != 0 {
 		go storageSaver(&memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
