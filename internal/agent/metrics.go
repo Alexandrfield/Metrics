@@ -71,28 +71,28 @@ func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) 
 func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		_, err := reportMetric(client, serverAdderess, metric, logger)
+		err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
-			logger.Debugf("error report metric. err%s\n ", err)
+			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
 }
 
-func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics,
-	logger common.Loger) (int, error) {
+func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger,
+) error {
 	objMetrics, err := json.Marshal(metric)
 	if err != nil {
-		return http.StatusBadRequest, fmt.Errorf("problem with marshal JSON file. err:%w", err)
+		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
 	url := fmt.Sprintf("http://%s/update/", serverAdderess)
 
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
 	if _, err = g.Write(objMetrics); err != nil {
-		return http.StatusBadRequest, fmt.Errorf("problem with compress. err:%w", err)
+		return fmt.Errorf("problem with compress. err:%w", err)
 	}
 	if err = g.Close(); err != nil {
-		return http.StatusBadRequest, fmt.Errorf("problem with  close compress writer. err:%w", err)
+		return fmt.Errorf("problem with  close compress writer. err:%w", err)
 	}
 
 	req, err := http.NewRequest(
@@ -108,9 +108,8 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Debugf("http.NewRequest.Do err: %s\n", err)
-		return 0, fmt.Errorf("http.NewRequest.Do err:%w", err)
+		return fmt.Errorf("http.NewRequest.Do err:%w", err)
 	}
-	status := resp.StatusCode
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
@@ -119,20 +118,19 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	}()
 	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
-		return status, fmt.Errorf("error reading body. err:%w", err)
+		return fmt.Errorf("error reading body. err:%w", err)
 	}
-	return status, nil
+	return nil
 }
 
 func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
 	metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		statusCode, err := reportMetric(client, serverAdderess, metric, logger)
+		err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
-		}
-		if statusCode == http.StatusOK {
+		} else {
 			metricsCounter[metric.ID] -= storage.TypeCounter(*metric.Delta)
 		}
 	}

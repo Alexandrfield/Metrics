@@ -115,9 +115,6 @@ func (st *MemStorage) LoadMemStorage(stream io.Reader) {
 
 func (st *MemStorage) AddGauge(name string, value TypeGauge) error {
 	st.gaugeData[name] = value
-	// if st.Config.StoreIntervalSecond == 0 {
-	// 	st.saveMemStorageInFile(st.Config.FileStoregePath)
-	// }
 	return nil
 }
 func (st *MemStorage) GetGauge(name string) (TypeGauge, error) {
@@ -133,9 +130,6 @@ func (st *MemStorage) AddCounter(name string, value TypeCounter) error {
 		val = 0
 	}
 	st.counterData[name] = val + value
-	// if st.Config.StoreIntervalSecond == 0 {
-	// 	st.saveMemStorageInFile(st.Config.FileStoregePath)
-	// }
 	return nil
 }
 func (st *MemStorage) GetCounter(name string) (TypeCounter, error) {

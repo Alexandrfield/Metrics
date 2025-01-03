@@ -146,11 +146,6 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 				responseData:   responseData,
 			}
 		}
-
-		// lw := loggingResponseWriter{
-		// 	ResponseWriter: w, // встраиваем оригинальный http.ResponseWriter
-		// 	responseData:   responseData,
-		// }
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",

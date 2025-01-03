@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -28,15 +27,23 @@ func main() {
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf("Rcovert. Panic occurred:\n")
-			fmt.Println(err)
+			logger.Errorf("Rcovert. Panic occurred. err:%w", err)
 			debug.PrintStack()
 		}
 	}()
 
-	config := server.GetServerConfig()
+	config, err := server.GetServerConfig()
+	if err != nil {
+		logger.Fatalf("Cant init server. err:%w", err)
+	}
 	done := make(chan struct{})
-	logger.Debugf("config file: %v", config)
+	defer func() {
+		close(done)
+		logger.Info("Server stoping ... ")
+		time.Sleep(1 * time.Second)
+		logger.Info("Server stoped")
+	}()
+	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s", config.ServerAdderess, config.FileStoregePath)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
 		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)
@@ -53,21 +60,15 @@ func main() {
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
-	// router.Post(`/update/`, server.WithLogging(logger, servHandler.DefaultAnswer))
 
 	logger.Info("Server started")
 	go func() {
 		err = http.ListenAndServe(config.ServerAdderess, router)
-		close(done)
 		if err != nil {
-			logger.Fatal("Unexpected error. err:%s", err)
+			logger.Errorf("Unexpected error. err:%s", err)
 		}
 	}()
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	<-osSignals
-	logger.Info("Server stoping ... ")
-	close(done)
-	time.Sleep(1 * time.Second)
-	logger.Info("Server stoped")
 }

@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func parseFlags(config *Config) {
+func parseFlags(config *Config) error {
 	flag.StringVar(&config.ServerAdderess, "a", "localhost:8080",
 		"address and port to run server [default:localhost:8080]")
 	flag.StringVar(&config.FileStoregePath, "f", "localStorage.dat",
@@ -27,7 +27,7 @@ func parseFlags(config *Config) {
 	if envStoreIntervalSecond, ok := os.LookupEnv("STORE_INTERVAL"); ok {
 		value, err := strconv.Atoi(envStoreIntervalSecond)
 		if err != nil {
-			fmt.Printf("error atoi STORE_INTERVAL; err: %s\n", err)
+			return fmt.Errorf("try atoi STORE_INTERVAL value; err: %w\n", err)
 		} else {
 			config.StoreIntervalSecond = value
 		}
@@ -35,15 +35,19 @@ func parseFlags(config *Config) {
 	if envRestore, ok := os.LookupEnv("RESTORE"); ok {
 		value, err := strconv.ParseBool(envRestore)
 		if err != nil {
-			fmt.Printf("error atoi RESTORE; err: %v\n", err)
+			return fmt.Errorf("Try atoi RESTORE value; err: %w\n", err)
 		} else {
 			config.Restore = value
 		}
 	}
+	return nil
 }
 
-func GetServerConfig() Config {
+func GetServerConfig() (Config, error) {
 	var config Config
-	parseFlags(&config)
-	return config
+	err := parseFlags(&config)
+	if err != nil {
+		return config, fmt.Errorf("GetServerConfig err:%w", err)
+	}
+	return config, nil
 }

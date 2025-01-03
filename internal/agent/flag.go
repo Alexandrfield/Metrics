@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func parseFlags(conf *Config) {
+func parseFlags(conf *Config) error {
 	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080",
 		"address and port to run server [default:localhost:8080]")
 	flag.IntVar(&conf.ReportIntervalSecond, "r", 10,
@@ -23,7 +23,7 @@ func parseFlags(conf *Config) {
 	if envReportIntervalSecond, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		value, err := strconv.Atoi(envReportIntervalSecond)
 		if err != nil {
-			fmt.Printf("error atoi REPORT_INTERVAL; err: %s\n", err)
+			return fmt.Errorf("Try atoi REPORT_INTERVAL value; err: %w\n", err)
 		} else {
 			conf.ReportIntervalSecond = value
 		}
@@ -31,15 +31,19 @@ func parseFlags(conf *Config) {
 	if envPollIntervalSecond, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		value, err := strconv.Atoi(envPollIntervalSecond)
 		if err != nil {
-			fmt.Printf("error atoi POLL_INTERVAL; err: %s\n", err)
+			return fmt.Errorf("Try atoi POLL_INTERVAL value; err: %w\n", err)
 		} else {
 			conf.PollIntervalSecond = value
 		}
 	}
+	return nil
 }
 
-func GetAgentConfig() Config {
-	var conf Config
-	parseFlags(&conf)
-	return conf
+func GetAgentConfig() (Config, error) {
+	var config Config
+	err := parseFlags(&config)
+	if err != nil {
+		return config, fmt.Errorf("GetAgentConfig err:%w", err)
+	}
+	return config, nil
 }
