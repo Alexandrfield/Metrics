@@ -27,7 +27,7 @@ func parseFlags(config *Config) error {
 	if envStoreIntervalSecond, ok := os.LookupEnv("STORE_INTERVAL"); ok {
 		value, err := strconv.Atoi(envStoreIntervalSecond)
 		if err != nil {
-			return fmt.Errorf("try atoi STORE_INTERVAL value; err: %w\n", err)
+			return fmt.Errorf("try atoi STORE_INTERVAL value; err: %w", err)
 		} else {
 			config.StoreIntervalSecond = value
 		}
@@ -35,7 +35,7 @@ func parseFlags(config *Config) error {
 	if envRestore, ok := os.LookupEnv("RESTORE"); ok {
 		value, err := strconv.ParseBool(envRestore)
 		if err != nil {
-			return fmt.Errorf("Try atoi RESTORE value; err: %w\n", err)
+			return fmt.Errorf("try atoi RESTORE value; err: %w", err)
 		} else {
 			config.Restore = value
 		}

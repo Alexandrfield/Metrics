@@ -23,7 +23,7 @@ func parseFlags(conf *Config) error {
 	if envReportIntervalSecond, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		value, err := strconv.Atoi(envReportIntervalSecond)
 		if err != nil {
-			return fmt.Errorf("Try atoi REPORT_INTERVAL value; err: %w\n", err)
+			return fmt.Errorf("try atoi REPORT_INTERVAL value; err: %w", err)
 		} else {
 			conf.ReportIntervalSecond = value
 		}
@@ -31,7 +31,7 @@ func parseFlags(conf *Config) error {
 	if envPollIntervalSecond, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		value, err := strconv.Atoi(envPollIntervalSecond)
 		if err != nil {
-			return fmt.Errorf("Try atoi POLL_INTERVAL value; err: %w\n", err)
+			return fmt.Errorf("try atoi POLL_INTERVAL value; err: %w", err)
 		} else {
 			conf.PollIntervalSecond = value
 		}
