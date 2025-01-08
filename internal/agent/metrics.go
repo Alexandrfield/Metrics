@@ -1,6 +1,9 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -8,8 +11,7 @@ import (
 	"runtime"
 	"time"
 
-	"log"
-
+	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
@@ -48,60 +50,92 @@ func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
 func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
 	metrics["PollCount"]++
 }
-func prepareReportGaugeMetrics(serverAdderess string, metricsGauge map[string]storage.TypeGauge) []string {
-	dataMetricForReport := make([]string, 0)
+func prepareReportGaugeMetrics(metricsGauge map[string]storage.TypeGauge) []common.Metrics {
+	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metricsGauge {
-		dataMetricForReport = append(dataMetricForReport,
-			fmt.Sprintf("http://%s/update/gauge/%s/%v", serverAdderess, key, value))
+		temp := float64(value)
+		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "gauge", Value: &temp})
 	}
 	return dataMetricForReport
 }
 
-func reportMetrics(client *http.Client, dataMetricForReport []string) {
+func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) []common.Metrics {
+	dataMetricForReport := make([]common.Metrics, 0)
+	for key, value := range metricsCounter {
+		temp := int64(value)
+		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "counter", Delta: &temp})
+	}
+	return dataMetricForReport
+}
+
+func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+	logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		_, err := reportMetric(client, metric)
+		err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
-			log.Printf("error report metric. err%s\n ", err)
+			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
 }
-func reportMetric(client *http.Client, url string) (int, error) {
+
+func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger,
+) error {
+	objMetrics, err := json.Marshal(metric)
+	if err != nil {
+		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
+	}
+	url := fmt.Sprintf("http://%s/update/", serverAdderess)
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(objMetrics); err != nil {
+		return fmt.Errorf("problem with compress. err:%w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("problem with  close compress writer. err:%w", err)
+	}
+
 	req, err := http.NewRequest(
-		http.MethodPost, url, http.NoBody,
+		http.MethodPost, url, bytes.NewBuffer(objMetrics),
 	)
 	if err != nil {
-		log.Printf("http.NewRequest. err: %s\n", err)
+		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := client.Do(req)
-	status := resp.StatusCode
 	if err != nil {
-		log.Printf("http.NewRequest.Do err: %s\n", err)
-		return status, fmt.Errorf("http.NewRequest.Do err:%w", err)
+		logger.Debugf("http.NewRequest.Do err: %s\n", err)
+		return fmt.Errorf("http.NewRequest.Do err:%w", err)
 	}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			logger.Warnf("resp.Body.Close() err: %s\n", err)
+		}
+	}()
 	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
-		return status, fmt.Errorf("error reading body. err:%w", err)
+		return fmt.Errorf("error reading body. err:%w", err)
 	}
-	_ = resp.Body.Close()
-	return status, nil
+	return nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, metricsCounter map[string]storage.TypeCounter) {
-	for key, value := range metricsCounter {
-		url := fmt.Sprintf("http://%s/update/counter/%s/%v", serverAdderess, key, value)
-		statusCode, err := reportMetric(client, url)
+func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+	metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
+	for _, metric := range dataMetricForReport {
+		err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
-			log.Printf("error report metric for counter. err%s\n ", err)
+			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
-		}
-		if statusCode == http.StatusOK {
-			metricsCounter[key] = 0
+		} else {
+			metricsCounter[metric.ID] -= storage.TypeCounter(*metric.Delta)
 		}
 	}
 }
-func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
+func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
 	metricsGauge := make(map[string]storage.TypeGauge)
@@ -115,9 +149,10 @@ func MetricsWatcher(config Config, client *http.Client, done chan struct{}) {
 			updateGaugeMetrics(metricsGauge)
 			updateCounterMetrics(metricsCounter)
 		case <-tickerReportInterval.C:
-			metricsGaugeReport := prepareReportGaugeMetrics(config.ServerAdderess, metricsGauge)
-			reportMetrics(client, metricsGaugeReport)
-			reportCounterMetrics(client, config.ServerAdderess, metricsCounter)
+			metricsGaugeReport := prepareReportGaugeMetrics(metricsGauge)
+			metricsCounterReport := prepareReportCounterMetrics(metricsCounter)
+			reportMetrics(client, config.ServerAdderess, metricsGaugeReport, logger)
+			reportCounterMetrics(client, config.ServerAdderess, metricsCounterReport, metricsCounter, logger)
 		}
 	}
 }

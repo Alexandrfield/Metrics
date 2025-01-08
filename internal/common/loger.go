@@ -1,0 +1,8 @@
+package common
+
+type Loger interface {
+	Warnf(template string, args ...interface{})
+	Infof(template string, args ...interface{})
+	Fatalf(template string, args ...interface{})
+	Debugf(template string, args ...interface{})
+}

@@ -6,30 +6,40 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestAddGaugePositiv(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	tests := []struct {
 		name   string
-		value  string
-		expect string
+		value  TypeGauge
+		expect TypeGauge
 	}{
 		{
 			name:   "test1",
-			value:  "24",
-			expect: "24",
+			value:  24,
+			expect: 24,
 		},
 		{
 			name:   "test2",
-			value:  "-24",
-			expect: "-24",
+			value:  -24,
+			expect: -24,
 		},
 		{
 			name:   "test3",
-			value:  "24.5",
-			expect: "24.5",
+			value:  24.5,
+			expect: 24.5,
 		},
 	}
 
@@ -46,9 +56,18 @@ func TestAddGaugePositiv(t *testing.T) {
 	}
 }
 func TestAddGaugeNegativ(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
-	err := memStorage.AddGauge("test1", "23")
+	err = memStorage.AddGauge("test1", 23)
 	if err != nil {
 		t.Errorf("Error for test; err:%s\n", err)
 		return
@@ -59,27 +78,36 @@ func TestAddGaugeNegativ(t *testing.T) {
 }
 
 func TestAddCounterPositiv(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	tests := []struct {
 		name   string
-		value  string
-		expect string
+		value  TypeCounter
+		expect TypeCounter
 	}{
 		{
 			name:   "test1",
-			value:  "42",
-			expect: "42",
+			value:  42,
+			expect: 42,
 		},
 		{
 			name:   "test2",
-			value:  "-77",
-			expect: "-77",
+			value:  -77,
+			expect: -77,
 		},
 		{
 			name:   "test3",
-			value:  "0",
-			expect: "0",
+			value:  0,
+			expect: 0,
 		},
 	}
 
@@ -97,9 +125,18 @@ func TestAddCounterPositiv(t *testing.T) {
 	}
 }
 func TestAddCounterNegativ(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
-	err := memStorage.AddCounter("test1", "23")
+	err = memStorage.AddCounter("test1", 23)
 	if err != nil {
 		t.Errorf("Error for test; err:%s\n", err)
 		return
@@ -111,40 +148,49 @@ func TestAddCounterNegativ(t *testing.T) {
 }
 
 func TestGetAllMetricName(t *testing.T) {
-	memStorage := CreateMemStorage()
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	memStorage := CreateMemStorage(storageConfig, logger, done)
 
 	testsGauge := []struct {
 		name  string
-		value string
+		value TypeGauge
 	}{
 		{
 			name:  "testsGauge1",
-			value: "14",
+			value: 14,
 		},
 		{
 			name:  "testsGauge2",
-			value: "-14",
+			value: -14,
 		},
 		{
 			name:  "testsGauge3",
-			value: "0",
+			value: 0,
 		},
 	}
 	testsCounter := []struct {
 		name  string
-		value string
+		value TypeCounter
 	}{
 		{
 			name:  "testCounter1",
-			value: "24",
+			value: 24,
 		},
 		{
 			name:  "testCounter2",
-			value: "-24",
+			value: -24,
 		},
 		{
 			name:  "testCounter3",
-			value: "0",
+			value: 0,
 		},
 	}
 	expected := make([]string, 0)

@@ -9,6 +9,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/server"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestUpdateValue(t *testing.T) {
@@ -53,10 +54,59 @@ func TestUpdateValue(t *testing.T) {
 				contentType: "plain/text",
 			},
 		},
+		{
+			name:    "negativ test #4",
+			request: "/update/counter/",
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: "plain/text",
+			},
+		},
+		{
+			name:    "negativ test #5",
+			request: "/update/gauge/",
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: "plain/text",
+			},
+		},
+		{
+			name:    "negativ test #6",
+			request: "/update/unknown/testCounter/100",
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "plain/text",
+			},
+		},
+		{
+			name:    "negativ test #7",
+			request: "/update/counter/testCounter/none",
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "plain/text",
+			},
+		},
+		{
+			name:    "negativ test #8",
+			request: "/update/gauge/testCounter/none",
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "plain/text",
+			},
+		},
 	}
-	store := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: store}
-	servHandler := handler.CreateHandlerRepository(&metricRep)
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+	done := make(chan struct{})
+	storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	store := storage.CreateMemStorage(storageConfig, logger, done)
+	metricRep := server.CreateMetricRepository(store, logger)
+	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -74,9 +124,20 @@ func TestDefaultAnswer(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/update/unknown/test/1", http.NoBody)
 	w := httptest.NewRecorder()
 
-	store := storage.CreateMemStorage()
-	metricRep := server.MetricRepository{LocalStorage: store}
-	servHandler := handler.CreateHandlerRepository(&metricRep)
+	zapLogger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Errorf("Can not initializate zap logger. err:%v", err)
+		return
+	}
+	defer func() { _ = zapLogger.Sync() }()
+	logger := zapLogger.Sugar()
+
+	done := make(chan struct{})
+	storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+	store := storage.CreateMemStorage(storageConfig, logger, done)
+
+	metricRep := server.CreateMetricRepository(store, logger)
+	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 	servHandler.DefaultAnswer(w, request)
 	result := w.Result()
@@ -106,9 +167,19 @@ func TestParserURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, tt.request, http.NoBody)
 			w := httptest.NewRecorder()
 
-			store := storage.CreateMemStorage()
-			metricRep := server.MetricRepository{LocalStorage: store}
-			servHandler := handler.CreateHandlerRepository(&metricRep)
+			zapLogger, err := zap.NewDevelopment()
+			if err != nil {
+				t.Errorf("Can not initializate zap logger. err:%v", err)
+				return
+			}
+			defer func() { _ = zapLogger.Sync() }()
+			logger := zapLogger.Sugar()
+
+			done := make(chan struct{})
+			storageConfig := storage.Config{FileStoregePath: "test.log", StoreIntervalSecond: 0, Restore: false}
+			store := storage.CreateMemStorage(storageConfig, logger, done)
+			metricRep := server.CreateMetricRepository(store, logger)
+			servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 			servHandler.UpdateValue(w, request)
 			result := w.Result()

@@ -1,9 +1,9 @@
 package agent
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 	_ "github.com/stretchr/testify"
 	"github.com/stretchr/testify/assert"
@@ -59,12 +59,26 @@ func TestPrepareReportGaugeMetrics(t *testing.T) {
 	metricsGauge := make(map[string]storage.TypeGauge)
 	metricsGauge["Alloc"] = 9.1
 	metricsGauge["GCCPUFraction"] = 10.43
-	serverAdderess := "127.0.0.1:8080"
 
-	var expected = []string{
-		fmt.Sprintf("http://%s/update/gauge/Alloc/9.1", serverAdderess),
-		fmt.Sprintf("http://%s/update/gauge/GCCPUFraction/10.43", serverAdderess),
+	expected := make([]common.Metrics, 0)
+	for key, value := range metricsGauge {
+		temp := float64(value)
+		expected = append(expected, common.Metrics{ID: key, MType: "gauge", Value: &temp})
 	}
-	actual := prepareReportGaugeMetrics(serverAdderess, metricsGauge)
+	actual := prepareReportGaugeMetrics(metricsGauge)
+	assert.ElementsMatch(t, actual, expected)
+}
+
+func TestPrepareReportCounterMetrics(t *testing.T) {
+	metricsGauge := make(map[string]storage.TypeCounter)
+	metricsGauge["AllocCounter"] = 8
+	metricsGauge["GCCPUFractionCounter"] = 10
+
+	expected := make([]common.Metrics, 0)
+	for key, value := range metricsGauge {
+		temp := int64(value)
+		expected = append(expected, common.Metrics{ID: key, MType: "counter", Delta: &temp})
+	}
+	actual := prepareReportCounterMetrics(metricsGauge)
 	assert.ElementsMatch(t, actual, expected)
 }
