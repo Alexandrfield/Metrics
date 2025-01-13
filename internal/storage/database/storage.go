@@ -1,8 +1,10 @@
 package databasestorage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
@@ -48,5 +50,13 @@ func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 }
 
 func (st *MemDatabaseStorage) PingDatabase() bool {
-	return st.db != nil
+	status := false
+	if st.db != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		if err := st.db.PingContext(ctx); err == nil {
+			status = true
+		}
+	}
+	return status
 }
