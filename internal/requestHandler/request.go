@@ -61,7 +61,7 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 }
 
 func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
-	rep.logger.Debugf("PingDatabase. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
+	rep.logger.Debugf("pingDatabase. req:%v;", req)
 	if rep.memStorage.PingDatabase() {
 		res.WriteHeader(http.StatusOK)
 	}

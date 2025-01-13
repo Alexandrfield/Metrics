@@ -43,7 +43,7 @@ func main() {
 		time.Sleep(1 * time.Second)
 		logger.Info("Server stoped")
 	}()
-	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s", config.ServerAdderess, config.FileStoregePath)
+	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:", config.ServerAdderess, config.FileStoregePath, config.DatabaseDsn)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
 		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)
@@ -58,7 +58,7 @@ func main() {
 	router.Post(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
 	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
 
-	router.Get(`/ping/`, server.WithLogging(logger, servHandler.Ping))
+	router.Get(`/ping`, server.WithLogging(logger, servHandler.Ping))
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
