@@ -85,7 +85,7 @@ func (rep *MetricRepository) GetAllValue() ([]string, error) {
 }
 func (rep *MetricRepository) PingDatabase() bool {
 	rep.Logger.Debugf("PingDatabase")
-	return rep.Ping()
+	return rep.LocalStorage.PingDatabase()
 }
 
 type (

@@ -1,4 +1,4 @@
-package database_storage
+package databasestorage
 
 import (
 	"database/sql"
@@ -11,8 +11,8 @@ import (
 
 type MemDatabaseStorage struct {
 	Logger      common.Loger
-	DatabaseDsn string
 	db          *sql.DB
+	DatabaseDsn string
 }
 
 func (st *MemDatabaseStorage) Start() error {
@@ -21,9 +21,9 @@ func (st *MemDatabaseStorage) Start() error {
 	var err error
 	st.db, err = sql.Open("pgx", st.DatabaseDsn)
 	if err != nil {
-		return fmt.Errorf("Can not open database. err:%w", err)
+		return fmt.Errorf("can not open database. err:%w", err)
 	}
-	//defer st.db.Close()
+	// defer st.db.Close()
 	return nil
 }
 func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) error {
@@ -46,8 +46,5 @@ func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 }
 
 func (st *MemDatabaseStorage) PingDatabase() bool {
-	if st.db != nil {
-		return true
-	}
-	return false
+	return st.db != nil
 }

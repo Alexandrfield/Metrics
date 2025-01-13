@@ -1,4 +1,4 @@
-package file_storage
+package filestorage
 
 import (
 	"errors"
@@ -110,7 +110,8 @@ func (st *MemFileStorage) AddCounter(name string, value common.TypeCounter) erro
 func (st *MemFileStorage) GetCounter(name string) (common.TypeCounter, error) {
 	val, ok := st.CounterData[name]
 	if !ok {
-		return common.TypeCounter(0), fmt.Errorf("can't find Counter metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
+		return common.TypeCounter(0), fmt.Errorf("can't find Counter metric with name:%s;err:%w",
+			name, ErrMetricNotExistIssue)
 	}
 	return val, nil
 }
