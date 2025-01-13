@@ -23,11 +23,12 @@ func parseFlags(config *Config) error {
 	if envServerAdderess, ok := os.LookupEnv("ADDRESS"); ok {
 		config.ServerAdderess = envServerAdderess
 	}
-	if envDatabaseDsn, ok := os.LookupEnv("DATABASE_DSN"); ok {
-		config.DatabaseDsn = envDatabaseDsn
-	}
 	if envFileStoregePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
 		config.FileStoregePath = envFileStoregePath
+	}
+	if envDatabaseDsn, ok := os.LookupEnv("DATABASE_DSN"); ok {
+		config.DatabaseDsn = envDatabaseDsn
+		config.FileStoregePath = ""
 	}
 	if envStoreIntervalSecond, ok := os.LookupEnv("STORE_INTERVAL"); ok {
 		value, err := strconv.Atoi(envStoreIntervalSecond)
