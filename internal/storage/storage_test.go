@@ -5,6 +5,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/Alexandrfield/Metrics/internal/common"
+	file_store "github.com/Alexandrfield/Metrics/internal/storage/file"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -23,8 +25,8 @@ func TestAddGaugePositiv(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		value  TypeGauge
-		expect TypeGauge
+		value  common.TypeGauge
+		expect common.TypeGauge
 	}{
 		{
 			name:   "test1",
@@ -73,7 +75,7 @@ func TestAddGaugeNegativ(t *testing.T) {
 		return
 	}
 	_, err = memStorage.GetGauge("test2")
-	check := errors.Is(err, errMetricNotExistIssue)
+	check := errors.Is(err, file_store.ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
 }
 
@@ -91,8 +93,8 @@ func TestAddCounterPositiv(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		value  TypeCounter
-		expect TypeCounter
+		value  common.TypeCounter
+		expect common.TypeCounter
 	}{
 		{
 			name:   "test1",
@@ -143,7 +145,7 @@ func TestAddCounterNegativ(t *testing.T) {
 	}
 	_, err = memStorage.GetCounter("test2")
 
-	check := errors.Is(err, errMetricNotExistIssue)
+	check := errors.Is(err, file_store.ErrMetricNotExistIssue)
 	assert.Equal(t, check, true)
 }
 
@@ -161,7 +163,7 @@ func TestGetAllMetricName(t *testing.T) {
 
 	testsGauge := []struct {
 		name  string
-		value TypeGauge
+		value common.TypeGauge
 	}{
 		{
 			name:  "testsGauge1",
@@ -178,7 +180,7 @@ func TestGetAllMetricName(t *testing.T) {
 	}
 	testsCounter := []struct {
 		name  string
-		value TypeCounter
+		value common.TypeCounter
 	}{
 		{
 			name:  "testCounter1",

@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
 type MetricsStorage interface {
-	SetCounterValue(metricName string, metricValue storage.TypeCounter) error
-	SetGaugeValue(metricName string, metricValue storage.TypeGauge) error
-	GetCounterValue(metricName string) (storage.TypeCounter, error)
-	GetGaugeValue(metricName string) (storage.TypeGauge, error)
+	SetCounterValue(metricName string, metricValue common.TypeCounter) error
+	SetGaugeValue(metricName string, metricValue common.TypeGauge) error
+	GetCounterValue(metricName string) (common.TypeCounter, error)
+	GetGaugeValue(metricName string) (common.TypeGauge, error)
 	GetAllValue() ([]string, error)
+	PingDatabase() bool
 }
 
 type MetricServer struct {
@@ -60,6 +60,14 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
+func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
+	rep.logger.Debugf("PingDatabase. req:%v;res.WriteHeader::%d\n", req, http.StatusNotImplemented)
+	if rep.memStorage.PingDatabase() {
+		res.WriteHeader(http.StatusOK)
+	}
+	res.WriteHeader(http.StatusInternalServerError)
+}
+
 func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	retStatus := http.StatusOK
 	rep.logger.Debugf("setValue type:%s; name: %s; value:%d; delta:%d;",
@@ -67,9 +75,9 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	var err error
 	switch metric.MType {
 	case "gauge":
-		err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
+		err = rep.memStorage.SetGaugeValue(metric.ID, common.TypeGauge(*metric.Value))
 	case "counter":
-		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
+		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(*metric.Delta))
 	default:
 		retStatus = http.StatusBadRequest
 		rep.logger.Debugf("unknown type:%s;", metric.MType)

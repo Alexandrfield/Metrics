@@ -58,6 +58,8 @@ func main() {
 	router.Post(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
 	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
 
+	router.Get(`/ping`, server.WithLogging(logger, servHandler.Ping))
+
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
 

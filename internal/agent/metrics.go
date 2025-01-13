@@ -12,45 +12,44 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
-func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
+func updateGaugeMetrics(metrics map[string]common.TypeGauge) {
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
-	metrics["Alloc"] = storage.TypeGauge(rtm.Alloc)
-	metrics["BuckHashSys"] = storage.TypeGauge(rtm.BuckHashSys)
-	metrics["Frees"] = storage.TypeGauge(rtm.Frees)
-	metrics["GCCPUFraction"] = storage.TypeGauge(rtm.GCCPUFraction)
-	metrics["GCSys"] = storage.TypeGauge(rtm.GCSys)
-	metrics["HeapAlloc"] = storage.TypeGauge(rtm.HeapAlloc)
-	metrics["HeapIdle"] = storage.TypeGauge(rtm.HeapIdle)
-	metrics["HeapInuse"] = storage.TypeGauge(rtm.HeapInuse)
-	metrics["HeapObjects"] = storage.TypeGauge(rtm.HeapObjects)
-	metrics["HeapReleased"] = storage.TypeGauge(rtm.HeapReleased)
-	metrics["HeapSys"] = storage.TypeGauge(rtm.HeapSys)
-	metrics["LastGC"] = storage.TypeGauge(rtm.LastGC)
-	metrics["Lookups"] = storage.TypeGauge(rtm.Lookups)
-	metrics["MCacheInuse"] = storage.TypeGauge(rtm.MCacheInuse)
-	metrics["MCacheSys"] = storage.TypeGauge(rtm.MCacheSys)
-	metrics["MSpanInuse"] = storage.TypeGauge(rtm.MSpanInuse)
-	metrics["MSpanSys"] = storage.TypeGauge(rtm.MSpanSys)
-	metrics["Mallocs"] = storage.TypeGauge(rtm.Mallocs)
-	metrics["NextGC"] = storage.TypeGauge(rtm.NextGC)
-	metrics["NumForcedGC"] = storage.TypeGauge(rtm.NumForcedGC)
-	metrics["NumGC"] = storage.TypeGauge(rtm.NumGC)
-	metrics["OtherSys"] = storage.TypeGauge(rtm.OtherSys)
-	metrics["PauseTotalNs"] = storage.TypeGauge(rtm.PauseTotalNs)
-	metrics["StackInuse"] = storage.TypeGauge(rtm.StackInuse)
-	metrics["StackSys"] = storage.TypeGauge(rtm.StackSys)
-	metrics["Sys"] = storage.TypeGauge(rtm.Sys)
-	metrics["TotalAlloc"] = storage.TypeGauge(rtm.TotalAlloc)
-	metrics["RandomValue"] = storage.TypeGauge(rand.Float64())
+	metrics["Alloc"] = common.TypeGauge(rtm.Alloc)
+	metrics["BuckHashSys"] = common.TypeGauge(rtm.BuckHashSys)
+	metrics["Frees"] = common.TypeGauge(rtm.Frees)
+	metrics["GCCPUFraction"] = common.TypeGauge(rtm.GCCPUFraction)
+	metrics["GCSys"] = common.TypeGauge(rtm.GCSys)
+	metrics["HeapAlloc"] = common.TypeGauge(rtm.HeapAlloc)
+	metrics["HeapIdle"] = common.TypeGauge(rtm.HeapIdle)
+	metrics["HeapInuse"] = common.TypeGauge(rtm.HeapInuse)
+	metrics["HeapObjects"] = common.TypeGauge(rtm.HeapObjects)
+	metrics["HeapReleased"] = common.TypeGauge(rtm.HeapReleased)
+	metrics["HeapSys"] = common.TypeGauge(rtm.HeapSys)
+	metrics["LastGC"] = common.TypeGauge(rtm.LastGC)
+	metrics["Lookups"] = common.TypeGauge(rtm.Lookups)
+	metrics["MCacheInuse"] = common.TypeGauge(rtm.MCacheInuse)
+	metrics["MCacheSys"] = common.TypeGauge(rtm.MCacheSys)
+	metrics["MSpanInuse"] = common.TypeGauge(rtm.MSpanInuse)
+	metrics["MSpanSys"] = common.TypeGauge(rtm.MSpanSys)
+	metrics["Mallocs"] = common.TypeGauge(rtm.Mallocs)
+	metrics["NextGC"] = common.TypeGauge(rtm.NextGC)
+	metrics["NumForcedGC"] = common.TypeGauge(rtm.NumForcedGC)
+	metrics["NumGC"] = common.TypeGauge(rtm.NumGC)
+	metrics["OtherSys"] = common.TypeGauge(rtm.OtherSys)
+	metrics["PauseTotalNs"] = common.TypeGauge(rtm.PauseTotalNs)
+	metrics["StackInuse"] = common.TypeGauge(rtm.StackInuse)
+	metrics["StackSys"] = common.TypeGauge(rtm.StackSys)
+	metrics["Sys"] = common.TypeGauge(rtm.Sys)
+	metrics["TotalAlloc"] = common.TypeGauge(rtm.TotalAlloc)
+	metrics["RandomValue"] = common.TypeGauge(rand.Float64())
 }
-func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
+func updateCounterMetrics(metrics map[string]common.TypeCounter) {
 	metrics["PollCount"]++
 }
-func prepareReportGaugeMetrics(metricsGauge map[string]storage.TypeGauge) []common.Metrics {
+func prepareReportGaugeMetrics(metricsGauge map[string]common.TypeGauge) []common.Metrics {
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metricsGauge {
 		temp := float64(value)
@@ -59,7 +58,7 @@ func prepareReportGaugeMetrics(metricsGauge map[string]storage.TypeGauge) []comm
 	return dataMetricForReport
 }
 
-func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) []common.Metrics {
+func prepareReportCounterMetrics(metricsCounter map[string]common.TypeCounter) []common.Metrics {
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metricsCounter {
 		temp := int64(value)
@@ -124,22 +123,22 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 }
 
 func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
-	metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
+	metricsCounter map[string]common.TypeCounter, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
 		err := reportMetric(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
 		} else {
-			metricsCounter[metric.ID] -= storage.TypeCounter(*metric.Delta)
+			metricsCounter[metric.ID] -= common.TypeCounter(*metric.Delta)
 		}
 	}
 }
 func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
-	metricsGauge := make(map[string]storage.TypeGauge)
-	metricsCounter := make(map[string]storage.TypeCounter)
+	metricsGauge := make(map[string]common.TypeGauge)
+	metricsCounter := make(map[string]common.TypeCounter)
 	metricsCounter["PollCount"] = 0
 	for {
 		select {

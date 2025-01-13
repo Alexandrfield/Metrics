@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/Alexandrfield/Metrics/internal/storage"
 	_ "github.com/stretchr/testify"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +14,7 @@ func TestUpdateGaugeMetrics(t *testing.T) {
 		"HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse", "MSpanSys",
 		"Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
 		"StackSys", "Sys", "TotalAlloc", "RandomValue"}
-	metricsGauge := make(map[string]storage.TypeGauge)
+	metricsGauge := make(map[string]common.TypeGauge)
 	for _, val := range listMetricsName {
 		metricsGauge[val] = -1
 	}
@@ -36,7 +35,7 @@ func TestUpdateGaugeMetrics(t *testing.T) {
 
 func TestUpdateCounterMetrics(t *testing.T) {
 	var listMetricsName = []string{"PollCount"}
-	metricsCounter := make(map[string]storage.TypeCounter)
+	metricsCounter := make(map[string]common.TypeCounter)
 	for _, val := range listMetricsName {
 		metricsCounter[val] = -1
 	}
@@ -56,7 +55,7 @@ func TestUpdateCounterMetrics(t *testing.T) {
 }
 
 func TestPrepareReportGaugeMetrics(t *testing.T) {
-	metricsGauge := make(map[string]storage.TypeGauge)
+	metricsGauge := make(map[string]common.TypeGauge)
 	metricsGauge["Alloc"] = 9.1
 	metricsGauge["GCCPUFraction"] = 10.43
 
@@ -70,7 +69,7 @@ func TestPrepareReportGaugeMetrics(t *testing.T) {
 }
 
 func TestPrepareReportCounterMetrics(t *testing.T) {
-	metricsGauge := make(map[string]storage.TypeCounter)
+	metricsGauge := make(map[string]common.TypeCounter)
 	metricsGauge["AllocCounter"] = 8
 	metricsGauge["GCCPUFractionCounter"] = 10
 
