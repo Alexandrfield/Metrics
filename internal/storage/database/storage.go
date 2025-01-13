@@ -21,8 +21,10 @@ func (st *MemDatabaseStorage) Start() error {
 	var err error
 	st.db, err = sql.Open("pgx", st.DatabaseDsn)
 	if err != nil {
+		st.db = nil
 		return fmt.Errorf("can not open database. err:%w", err)
 	}
+	st.Logger.Infof("Connect to db open")
 	// defer st.db.Close()
 	return nil
 }

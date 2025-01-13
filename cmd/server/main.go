@@ -43,8 +43,8 @@ func main() {
 		time.Sleep(1 * time.Second)
 		logger.Info("Server stoped")
 	}()
-	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:", config.ServerAdderess, config.FileStoregePath,
-		config.DatabaseDsn)
+	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:", config.ServerAdderess,
+		config.FileStoregePath, config.DatabaseDsn)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
 		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore, DatabaseDsn: config.DatabaseDsn}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)
