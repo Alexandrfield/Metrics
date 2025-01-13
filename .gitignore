@@ -26,5 +26,6 @@ vendor/
 
 *.log
 *temp
+*dat
 
 golangci-lint
