@@ -19,6 +19,7 @@ type BasicStorage interface {
 
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) BasicStorage {
 	if config.DatabaseDsn != "" {
+		logger.Debugf("Create storage database")
 		memStorage := database_storage.MemDatabaseStorage{Logger: logger, DatabaseDsn: config.DatabaseDsn}
 		err := memStorage.Start()
 		if err != nil {
@@ -26,6 +27,7 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) Ba
 		}
 		return &memStorage
 	} else {
+		logger.Debugf("Create storage file")
 		memStorage := file_storage.MemFileStorage{GaugeData: make(map[string]common.TypeGauge),
 			CounterData: make(map[string]common.TypeCounter), Logger: logger}
 		logger.Debugf("config.Restore %s", config.Restore)
