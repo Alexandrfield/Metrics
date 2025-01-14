@@ -79,7 +79,8 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) error {
 	case "gauge":
 		err = rep.memStorage.SetGaugeValue(metric.ID, common.TypeGauge(*metric.Value))
 	case "counter":
-		var temp int64 = *(metric.Delta)
+		var temp int64 = *((*metric).Delta)
+		rep.logger.Debugf("setValue >> temp:%d;;", temp)
 		rep.logger.Debugf("setValue >> delta:%d;%d;", *(metric.Delta), (*metric).Delta)
 		rep.logger.Debugf("setValue >> counter name: %s;  delta:%d;%d;", metric.ID, temp, common.TypeCounter(temp))
 		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(temp))
