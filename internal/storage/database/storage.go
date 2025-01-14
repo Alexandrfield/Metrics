@@ -53,7 +53,7 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 }
 func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	row := st.db.QueryRowContext(context.Background(),
-		"SELECT value FROM metrics WHERE (id = $1 AND mtype = gauge)", name)
+		"SELECT value FROM metrics WHERE (id = $1 AND mtype = $2)", name, "gauge")
 	var res common.TypeGauge
 	err := row.Scan(&res)
 	if err != nil {
@@ -75,7 +75,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 }
 func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
 	row := st.db.QueryRowContext(context.Background(),
-		"SELECT delta FROM metrics WHERE (id = $1 AND mtype = counter)", name)
+		"SELECT delta FROM metrics WHERE (id = $1 AND mtype = $2)", name, "counter")
 	var res common.TypeCounter
 	st.Logger.Debugf("row:%s", row)
 	err := row.Scan(&res)
