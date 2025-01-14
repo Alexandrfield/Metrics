@@ -61,7 +61,7 @@ func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	return res, nil
 }
 func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) error {
-	query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = value + $4;`
+	query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = delta + $4;`
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if _, err := st.db.ExecContext(ctx, query, name, "counter", value, value); err != nil {
