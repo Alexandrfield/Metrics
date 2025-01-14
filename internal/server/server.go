@@ -92,7 +92,12 @@ func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
 	rep.Logger.Debugf("AddMetrics")
 	fmt.Println("    ----===----  ")
 	for i := 0; i < len(metrics); i++ {
-		fmt.Println(metrics[i])
+		if metrics[i].MType == "gauge" {
+			fmt.Printf("%v; value:%d \n", metrics[i], *metrics[i].Value)
+		}
+		if metrics[i].MType == "counter" {
+			fmt.Printf("%v; delta:%d \n", metrics[i], *metrics[i].Delta)
+		}
 	}
 	fmt.Println("    ----=+=----  ")
 	err := rep.LocalStorage.AddMetrics(metrics)
