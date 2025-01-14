@@ -62,6 +62,7 @@ func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	if err != nil {
 		return common.TypeGauge(0), fmt.Errorf("problem with scan GetGauge. err:%w", err)
 	}
+	st.Logger.Debugf("GetGauge name:%s->:%d", name, res)
 	return res, nil
 }
 func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) error {
@@ -97,6 +98,7 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 		st.Logger.Debugf("cant find name:%s; err:%w", name, err)
 		return common.TypeCounter(0), fmt.Errorf("problem with scan GetCounter. err:%w", err)
 	}
+	st.Logger.Debugf("GetCounter name:%s->:%d", name, res)
 	return res, nil
 }
 
