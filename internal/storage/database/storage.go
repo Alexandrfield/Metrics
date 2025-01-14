@@ -75,12 +75,12 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 }
 func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
 	row := st.db.QueryRowContext(context.Background(),
-		"SELECT delta FROM metrics WHERE id = $1 AND mtype = counter", name)
+		"SELECT delta FROM metrics WHERE id = $1 AND mtype = \"counter\"", name)
 	var res common.TypeCounter
 	err := row.Scan(&res)
 	if err != nil {
 		st.Logger.Debugf("cant find name:%s; err:%w", name, err)
-		return common.TypeCounter(0), fmt.Errorf("problem with scan GetGauge. err:%w", err)
+		return common.TypeCounter(0), fmt.Errorf("problem with scan GetCounter. err:%w", err)
 	}
 	return res, nil
 }
@@ -88,7 +88,7 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 	allGaugeKeys := make([]string, 0)
 	allCounterKeys := make([]string, 0)
-	rowsg, err := st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = gauge")
+	rowsg, err := st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = \"gauge\"")
 	defer func() { _ = rowsg.Close() }()
 	if err != nil {
 		st.Logger.Errorf("Problem with QueryContext gauge metrics. err:%w", err)
