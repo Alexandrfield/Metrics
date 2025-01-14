@@ -15,6 +15,7 @@ type BasicStorage interface {
 	GetGauge(metricName string) (common.TypeGauge, error)
 	GetAllMetricName() ([]string, []string)
 	PingDatabase() bool
+	AddMetrics(metrics []common.Metrics) error
 }
 
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) BasicStorage {

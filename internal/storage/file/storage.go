@@ -130,3 +130,21 @@ func (st *MemFileStorage) GetAllMetricName() ([]string, []string) {
 func (st *MemFileStorage) PingDatabase() bool {
 	return false
 }
+
+func (st *MemFileStorage) AddMetrics(metrics []common.Metrics) error {
+	for _, metric := range metrics {
+		var err error
+		switch metric.MType {
+		case "gauge":
+			err = st.AddGauge(metric.ID, common.TypeGauge(*metric.Value))
+		case "counter":
+			err = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
+		default:
+			return fmt.Errorf("AddMetrics. unknown type:%s;", metric.MType)
+		}
+		if err != nil {
+			st.Logger.Debugf("Problem with add Metrics. err:%s", err)
+		}
+	}
+	return nil
+}

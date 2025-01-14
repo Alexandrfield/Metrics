@@ -138,3 +138,46 @@ func (st *MemDatabaseStorage) PingDatabase() bool {
 	}
 	return status
 }
+
+func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
+	tx, err := st.db.Begin()
+	if err != nil {
+		return fmt.Errorf("can not start transactiom. err:%w", err)
+	}
+
+	for _, metric := range metrics {
+		switch metric.MType {
+		case "counter":
+			query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) 
+	ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
+			if _, err := tx.ExecContext(context.Background(), query, metric.ID, "counter", common.TypeCounter(*metric.Delta),
+				common.TypeCounter(*metric.Delta)); err != nil {
+				errr := tx.Rollback()
+				if errr != nil {
+					return fmt.Errorf("error while trying to save counter metric %s: err%w; And can not rollback! err:%w",
+						metric.ID, err, errr)
+				}
+				return fmt.Errorf("error while trying to save counter metric %s: %w", metric.ID, err)
+			}
+		case "gauge":
+			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4;`
+			if _, err := st.db.ExecContext(context.Background(), query, metric.ID, "gauge", common.TypeGauge(*metric.Value),
+				common.TypeGauge(*metric.Value)); err != nil {
+				errr := tx.Rollback()
+				if errr != nil {
+					return fmt.Errorf("error while trying to save gauge metric %s: err%w; And can not rollback! err:%w",
+						metric.ID, err, errr)
+				}
+				return fmt.Errorf("error while trying to save gauge metric %s: %w", metric.ID, err)
+			}
+		default:
+			st.Logger.Debugf("AddMetrics. unknown type:%s;", metric.MType)
+			continue
+		}
+	}
+	comerr := tx.Commit()
+	if comerr != nil {
+		return fmt.Errorf("error with commit transactiom. err:%w", err)
+	}
+	return nil
+}

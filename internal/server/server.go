@@ -88,6 +88,15 @@ func (rep *MetricRepository) PingDatabase() bool {
 	return rep.LocalStorage.PingDatabase()
 }
 
+func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
+	rep.Logger.Debugf("AddMetrics")
+	err := rep.LocalStorage.AddMetrics(metrics)
+	if err != nil {
+		return fmt.Errorf("problem wit add metrics. err:%w", err)
+	}
+	return nil
+}
+
 type (
 	responseData struct {
 		status int

@@ -65,6 +65,7 @@ func main() {
 
 	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
+	router.Post(`/updates/`, server.WithLogging(logger, servHandler.UpdatesMetrics))
 
 	logger.Info("Server started")
 	go func() {

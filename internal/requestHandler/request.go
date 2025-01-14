@@ -2,6 +2,7 @@ package requesthandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -16,6 +17,7 @@ type MetricsStorage interface {
 	GetGaugeValue(metricName string) (common.TypeGauge, error)
 	GetAllValue() ([]string, error)
 	PingDatabase() bool
+	AddMetrics(metrics []common.Metrics) error
 }
 
 type MetricServer struct {
@@ -69,8 +71,7 @@ func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (rep *MetricServer) updateValue(metric *common.Metrics) int {
-	retStatus := http.StatusOK
+func (rep *MetricServer) updateValue(metric *common.Metrics) error {
 	rep.logger.Debugf("setValue type:%s; name: %s; value:%d; delta:%d;",
 		metric.MType, metric.ID, metric.Value, metric.Delta)
 	var err error
@@ -80,14 +81,21 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) int {
 	case "counter":
 		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(*metric.Delta))
 	default:
-		retStatus = http.StatusBadRequest
-		rep.logger.Debugf("unknown type:%s;", metric.MType)
+		return fmt.Errorf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
-		retStatus = http.StatusBadRequest
-		rep.logger.Debugf("internal error:%w", err)
+		return fmt.Errorf("internal error updateValue:%w", err)
 	}
-	return retStatus
+	return nil
+}
+
+func (rep *MetricServer) updateValues(metrics []common.Metrics) error {
+	rep.logger.Debugf("updateValues len(metrics):%d", len(metrics))
+	err := rep.memStorage.AddMetrics(metrics)
+	if err != nil {
+		return fmt.Errorf("internal error for updateValues. err:%w", err)
+	}
+	return nil
 }
 func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
@@ -99,14 +107,43 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 	}
 	rep.logger.Debugf("UpdateJSONValue json type:%s; name: %s; value:%d; delta:%d;",
 		metric.MType, metric.ID, metric.Value, metric.Delta)
-	retStatus := rep.updateValue(&metric)
-	res.WriteHeader(retStatus)
+	err := rep.updateValue(&metric)
+	if err != nil {
+		rep.logger.Debugf("Problem UpdateJSONValue json. err:%s", err)
+		res.WriteHeader(http.StatusBadRequest)
+	} else {
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Request) {
+	var metrics []common.Metrics
+	body := req.Body
+	rep.logger.Debugf("UpdatesMetrics body:%v", body)
+	if err := json.NewDecoder(body).Decode(&metrics); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err := rep.updateValues(metrics)
+	if err != nil {
+		rep.logger.Debugf("Problem updateValues . err:%s", err)
+		res.WriteHeader(http.StatusBadRequest)
+	} else {
+		res.WriteHeader(http.StatusOK)
+	}
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	metric, retStatus := parseURL(req, rep.logger)
 	if retStatus == http.StatusOK {
-		retStatus = rep.updateValue(&metric)
+		err := rep.updateValue(&metric)
+		if err != nil {
+			rep.logger.Debugf("Problem UpdateJSONValue json. err:%s", err)
+			res.WriteHeader(http.StatusBadRequest)
+		} else {
+			res.WriteHeader(http.StatusOK)
+		}
+		return
 	}
 	res.WriteHeader(retStatus)
 }
