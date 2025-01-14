@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -44,8 +43,8 @@ func main() {
 		time.Sleep(1 * time.Second)
 		logger.Info("Server stoped")
 	}()
-	config.DatabaseDsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-		`localhost`, `postgres`, `12345678`, `metrics`)
+	// config.DatabaseDsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
+	//	`localhost`, `postgres`, `12345678`, `metrics`)
 	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:", config.ServerAdderess,
 		config.FileStoregePath, config.DatabaseDsn)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
