@@ -67,8 +67,10 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if _, err := st.db.ExecContext(ctx, query, name, "counter", value, value); err != nil {
+		st.Logger.Debugf("error while trying to save counter metric %s: %w", name, err)
 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 	}
+	st.Logger.Debugf("succes add counter metric name%s;", name)
 	return nil
 }
 func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
@@ -77,6 +79,7 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 	var res common.TypeCounter
 	err := row.Scan(&res)
 	if err != nil {
+		st.Logger.Debugf("cant find name:%s; err:%w", name, err)
 		return common.TypeCounter(0), fmt.Errorf("problem with scan GetGauge. err:%w", err)
 	}
 	return res, nil
