@@ -89,11 +89,11 @@ func (rep *MetricRepository) PingDatabase() bool {
 }
 
 func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
-	rep.Logger.Debugf("AddMetrics")
+	rep.Logger.Debugf("AddMetrics len(metrics):%d", len(metrics))
 	fmt.Println("    ----===----  ")
 	for i := 0; i < len(metrics); i++ {
 		if metrics[i].MType == "gauge" {
-			fmt.Printf("%v; value:%d \n", metrics[i], *metrics[i].Value)
+			fmt.Printf("%v; value:%v \n", metrics[i], *metrics[i].Value)
 		}
 		if metrics[i].MType == "counter" {
 			fmt.Printf("%v; delta:%d \n", metrics[i], *metrics[i].Delta)
