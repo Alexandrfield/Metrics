@@ -79,7 +79,9 @@ func (rep *MetricServer) updateValue(metric *common.Metrics) error {
 	case "gauge":
 		err = rep.memStorage.SetGaugeValue(metric.ID, common.TypeGauge(*metric.Value))
 	case "counter":
-		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(*metric.Delta))
+		temp := *metric.Delta
+		rep.logger.Debugf("setValue >> counter name: %s;  delta:%d;%d;", metric.ID, temp, common.TypeCounter(temp))
+		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(temp))
 	default:
 		return fmt.Errorf("unknown type:%s;", metric.MType)
 	}
