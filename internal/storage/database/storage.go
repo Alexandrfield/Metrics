@@ -62,13 +62,24 @@ func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	return res, nil
 }
 func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) error {
-	query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) 
-	ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if _, err := st.db.ExecContext(ctx, query, name, "counter", value, value); err != nil {
-		st.Logger.Debugf("error while trying to save counter metric %s: %w", name, err)
-		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+
+	val, err := st.GetCounter(name)
+	if err != nil {
+		query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if _, err := st.db.ExecContext(ctx, query, name, "counter", value, value); err != nil {
+			st.Logger.Debugf("error while trying to save counter metric %s: %w", name, err)
+			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+		}
+	} else {
+		query := "INSERT INTO metrics SET delta = $1 WHERE id = $2"
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if _, err := st.db.ExecContext(ctx, query, val+value, name); err != nil {
+			st.Logger.Debugf("error while trying to save counter metric %s: %w", name, err)
+			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+		}
 	}
 	st.Logger.Debugf("succes add counter metric name%s;", name)
 	return nil
