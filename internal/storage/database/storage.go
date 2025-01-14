@@ -75,7 +75,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 }
 func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
 	row := st.db.QueryRowContext(context.Background(),
-		"SELECT delta FROM metrics WHERE id = $1 AND mtype = \"counter\"", name)
+		"SELECT delta FROM metrics WHERE (id = $1 AND mtype = $2)", name, "counter")
 	var res common.TypeCounter
 	st.Logger.Debugf("row:%s", row)
 	err := row.Scan(&res)
