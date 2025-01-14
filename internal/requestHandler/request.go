@@ -34,6 +34,7 @@ func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
 		if len(url) != 5 {
 			return metric, http.StatusNotFound
 		}
+		logger.Debugf("--->%s;%s;%s", url[2], url[3], url[4])
 		err := metric.SaveMetric(url[2], url[3], url[4])
 		if err != nil {
 			logger.Debugf("issue with parse metric (command update): %w", err)
