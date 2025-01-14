@@ -135,6 +135,7 @@ func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Reque
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	metric, retStatus := parseURL(req, rep.logger)
+	rep.logger.Debugf("update value metric:%s; delta:%d", metric, *metric.Delta)
 	if retStatus == http.StatusOK {
 		err := rep.updateValue(&metric)
 		if err != nil {
