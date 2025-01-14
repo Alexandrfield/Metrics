@@ -164,6 +164,8 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	}
 
 	for _, metric := range metrics {
+		st.Logger.Debugf("AddMetrics>>> type:%s; name: %s; value:%d; delta:%d;",
+			metric.MType, metric.ID, metric.Value, metric.Delta)
 		switch metric.MType {
 		case "counter":
 			query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) 
