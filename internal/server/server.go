@@ -90,6 +90,11 @@ func (rep *MetricRepository) PingDatabase() bool {
 
 func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
 	rep.Logger.Debugf("AddMetrics")
+	fmt.Println("    ----===----  ")
+	for i := 0; i < len(metrics); i++ {
+		fmt.Println(metrics[i])
+	}
+	fmt.Println("    ----=+=----  ")
 	err := rep.LocalStorage.AddMetrics(metrics)
 	if err != nil {
 		return fmt.Errorf("problem wit add metrics. err:%w", err)
