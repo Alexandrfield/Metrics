@@ -17,9 +17,10 @@ type MemDatabaseStorage struct {
 	DatabaseDsn string
 }
 
-func (m *MemDatabaseStorage) createTable(ctx context.Context) error {
-	const query = `CREATE TABLE if NOT EXISTS metrics (id text PRIMARY KEY, mtype text, delta bigint, value DOUBLE PRECISION)`
-	if _, err := m.db.ExecContext(ctx, query); err != nil {
+func (st *MemDatabaseStorage) createTable(ctx context.Context) error {
+	const query = `CREATE TABLE if NOT EXISTS metrics (id text PRIMARY KEY, 
+	mtype text, delta bigint, value DOUBLE PRECISION)`
+	if _, err := st.db.ExecContext(ctx, query); err != nil {
 		return fmt.Errorf("error while trying to create table: %w", err)
 	}
 	return nil
@@ -56,12 +57,13 @@ func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	var res common.TypeGauge
 	err := row.Scan(&res)
 	if err != nil {
-		return common.TypeGauge(0), fmt.Errorf("Problem with scan GetGauge. err:%w", err)
+		return common.TypeGauge(0), fmt.Errorf("problem with scan GetGauge. err:%w", err)
 	}
 	return res, nil
 }
 func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) error {
-	query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
+	query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) 
+	ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if _, err := st.db.ExecContext(ctx, query, name, "counter", value, value); err != nil {
@@ -75,7 +77,7 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 	var res common.TypeCounter
 	err := row.Scan(&res)
 	if err != nil {
-		return common.TypeCounter(0), fmt.Errorf("Problem with scan GetGauge. err:%w", err)
+		return common.TypeCounter(0), fmt.Errorf("problem with scan GetGauge. err:%w", err)
 	}
 	return res, nil
 }
@@ -83,33 +85,41 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 	allGaugeKeys := make([]string, 0)
 	allCounterKeys := make([]string, 0)
-	rows, err := st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = gauge")
+	rowsg, err := st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = gauge")
+	defer func() { _ = rowsg.Close() }()
 	if err != nil {
 		st.Logger.Errorf("Problem with QueryContext gauge metrics. err:%w", err)
 		return allGaugeKeys, allCounterKeys
 	}
-	for rows.Next() {
+	for rowsg.Next() {
 		var temp string
-		err := rows.Scan(&temp)
+		err := rowsg.Scan(&temp)
 		if err != nil {
 			st.Logger.Errorf("Problem with scan gauge name", err)
 			continue
 		}
 		allGaugeKeys = append(allGaugeKeys, temp)
 	}
-	rows, err = st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = counter")
+	if err = rowsg.Err(); err != nil {
+		st.Logger.Errorf("Problem iteration gauge names", err)
+	}
+	rowsc, err := st.db.QueryContext(context.Background(), "SELECT id FROM metrics WHERE  mtype = counter")
+	defer func() { _ = rowsc.Close() }()
 	if err != nil {
 		st.Logger.Errorf("Problem with QueryContext counter metrics. err:%w", err)
 		return allGaugeKeys, allCounterKeys
 	}
-	for rows.Next() {
+	for rowsc.Next() {
 		var temp string
-		err := rows.Scan(&temp)
+		err := rowsc.Scan(&temp)
 		if err != nil {
-			st.Logger.Errorf("Problem with scan counter name", err)
+			st.Logger.Errorf("problem with scan counter name", err)
 			continue
 		}
 		allGaugeKeys = append(allGaugeKeys, temp)
+	}
+	if err = rowsc.Err(); err != nil {
+		st.Logger.Errorf("Problem iteration counter names", err)
 	}
 	return allGaugeKeys, allCounterKeys
 }
