@@ -79,7 +79,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 		}
 	} else {
 		st.Logger.Debugf("counter metric exist nmae:%s; val:%d; value:%d; res:%d", name, val, value, val+value)
-		query := "INSERT INTO metrics SET delta = $1 WHERE id = $2"
+		query := "UPDATE INTO metrics SET delta = $1 WHERE id = $2"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if _, err := st.db.ExecContext(ctx, query, val+value, name); err != nil {
