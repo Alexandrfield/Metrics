@@ -171,20 +171,11 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		switch metric.MType {
 		case "counter":
 			continue
-			// 		query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)
-			// ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
-			// 		if _, err := st.db.ExecContext(context.Background(), query, metric.ID, typecounter, common.TypeCounter(*metric.Delta),
-			// 			common.TypeCounter(*metric.Delta)); err != nil {
-			// 			errr := tx.Rollback()
-			// 			if errr != nil {
-			// 				return fmt.Errorf("error while trying to save gauge metric %s: err%w; And can not rollback! err:%w",
-			// 					metric.ID, err, errr)
-			// 			}
-			// 			return fmt.Errorf("error while trying to save gauge metric %s: %w", metric.ID, err)
-			// 		}
 		case "gauge":
-			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4;`
-			if _, err := st.db.ExecContext(context.Background(), query, metric.ID, typegauge, common.TypeGauge(*metric.Value),
+			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) 
+			DO UPDATE SET value = $4;`
+			if _, err := st.db.ExecContext(context.Background(), query,
+				metric.ID, typegauge, common.TypeGauge(*metric.Value),
 				common.TypeGauge(*metric.Value)); err != nil {
 				errr := tx.Rollback()
 				if errr != nil {
@@ -205,7 +196,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	for _, metric := range metrics {
 		switch metric.MType {
 		case "counter":
-			st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
+			_ = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
 		default:
 			continue
 		}
