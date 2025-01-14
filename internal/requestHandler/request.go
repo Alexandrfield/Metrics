@@ -64,8 +64,9 @@ func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
 	rep.logger.Debugf("pingDatabase. req:%v;", req)
 	if rep.memStorage.PingDatabase() {
 		res.WriteHeader(http.StatusOK)
+	} else {
+		res.WriteHeader(http.StatusInternalServerError)
 	}
-	res.WriteHeader(http.StatusInternalServerError)
 }
 
 func (rep *MetricServer) updateValue(metric *common.Metrics) int {
