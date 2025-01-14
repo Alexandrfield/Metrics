@@ -172,29 +172,16 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 			metric.MType, metric.ID, metric.Value, metric.Delta)
 		switch metric.MType {
 		case "counter":
-			val, err := st.GetCounter(metric.ID)
-			if err != nil {
-				query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
-				if _, err := tx.ExecContext(context.Background(), query,
-					metric.ID, typecounter, common.TypeCounter(*metric.Delta)); err != nil {
-					errr := tx.Rollback()
-					if errr != nil {
-						return fmt.Errorf("error while trying to save counter metric %s: err%w; And can not rollback! err:%w",
-							metric.ID, err, errr)
-					}
-					return fmt.Errorf("error while trying to save counter metric %s: %w", metric.ID, err)
+			query := `INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) 
+	ON CONFLICT (id) DO UPDATE SET delta = EXCLUDED.delta + $4;`
+			if _, err := st.db.ExecContext(context.Background(), query, metric.ID, typecounter, common.TypeCounter(*metric.Delta),
+				common.TypeCounter(*metric.Delta)); err != nil {
+				errr := tx.Rollback()
+				if errr != nil {
+					return fmt.Errorf("error while trying to save gauge metric %s: err%w; And can not rollback! err:%w",
+						metric.ID, err, errr)
 				}
-			} else {
-				query := "INSERT INTO metrics SET delta = $1 WHERE id = $2"
-				if _, err := tx.ExecContext(context.Background(), query,
-					val+common.TypeCounter(*metric.Delta), metric.ID); err != nil {
-					errr := tx.Rollback()
-					if errr != nil {
-						return fmt.Errorf("error while trying to save counter metric %s: err%w; And can not rollback! err:%w",
-							metric.ID, err, errr)
-					}
-					return fmt.Errorf("error while trying to save counter metric %s: %w", metric.ID, err)
-				}
+				return fmt.Errorf("error while trying to save gauge metric %s: %w", metric.ID, err)
 			}
 		case "gauge":
 			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4;`
