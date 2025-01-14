@@ -69,6 +69,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 	st.Logger.Debugf("addCounter to database. name:%s, value:%d", name, value)
 	val, err := st.GetCounter(name)
 	if err != nil {
+		st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
 		query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -77,6 +78,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
 	} else {
+		st.Logger.Debugf("counter metric exist nmae:%s; val:%d; value:%d; res:%d", name, val, value, val+value)
 		query := "INSERT INTO metrics SET delta = $1 WHERE id = $2"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
