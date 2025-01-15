@@ -74,7 +74,7 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 		query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if err := st.exec(ctx, query, name, typecounter, value); err != nil {
+		if err := st.exec(ctx, query, name, typegauge, value); err != nil {
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
 	} else {
@@ -86,12 +86,6 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
 	}
-	// query := `INSERT INTO metrics (id, mtype, value, delta) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4;`
-	// ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// defer cancel()
-	// if err := st.exec(ctx, query, name, typegauge, value, value); err != nil {
-	// 	return fmt.Errorf("error while trying to save gauge metric %s: %w", name, err)
-	// }
 	return nil
 }
 func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
@@ -217,7 +211,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 				common.TypeGauge(*metric.Value)); err != nil {
 				errr := tx.Rollback()
 				if errr != nil {
-					return fmt.Errorf("error while trying to save gauge metric %s: err%w; And can not rollback! err:%w",
+					return fmt.Errorf("error while trying to save gauge metric %s: err%w;And can not rollback! err:%w",
 						metric.ID, err, errr)
 				}
 				return fmt.Errorf("error while trying to save gauge metric %s: %w", metric.ID, err)
