@@ -136,6 +136,7 @@ func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Reque
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
+	rep.logger.Debugf("UpdateValue")
 	metric, retStatus := parseURL(req, rep.logger)
 	if retStatus == http.StatusOK {
 		rep.logger.Debugf("update value metric:%s; delta:%s", metric, metric.Delta)
@@ -160,6 +161,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 		temp := float64(val)
 		metric.Value = &temp
 		if err != nil {
+			rep.logger.Debugf("rep.memStorage.GetGaugeValue(metric.ID). err", err)
 			retStatus = http.StatusNotFound
 		}
 	case "counter":
@@ -167,6 +169,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 		temp := int64(val)
 		metric.Delta = &temp
 		if err != nil {
+			rep.logger.Debugf("rep.memStorage.GetCounterValue(metric.ID). err", err)
 			retStatus = http.StatusNotFound
 		}
 	default:
