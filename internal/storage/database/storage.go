@@ -52,6 +52,7 @@ func (st *MemDatabaseStorage) exec(ctx context.Context, query string, args ...an
 	waitTime := []int{0, 1, 3, 5}
 	for _, val := range waitTime {
 		time.Sleep(time.Duration(val) * time.Second)
+		st.Logger.Debugf("Retry query to database:%s;%s;", query, args)
 		if _, err := st.db.ExecContext(ctx, query, args); err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
