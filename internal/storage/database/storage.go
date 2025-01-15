@@ -53,7 +53,7 @@ func (st *MemDatabaseStorage) exec(ctx context.Context, query string, args ...an
 	for _, val := range waitTime {
 		time.Sleep(time.Duration(val) * time.Second)
 		st.Logger.Debugf("Retry query to database:%s;%s;", query, args)
-		if _, err := st.db.ExecContext(ctx, query, args); err != nil {
+		if _, err := st.db.ExecContext(ctx, query, args...); err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
 				st.Logger.Debugf("Retry query to database")
@@ -72,7 +72,7 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := st.exec(ctx, query, name, typegauge, value, value); err != nil {
-		fmt.Errorf("error while trying to save gauge metric %s: %w", name, err)
+		return fmt.Errorf("error while trying to save gauge metric %s: %w", name, err)
 	}
 	return nil
 }
