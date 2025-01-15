@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
@@ -69,8 +71,18 @@ func prepareReportCounterMetrics(metricsCounter map[string]common.TypeCounter) [
 
 func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
+	retryValue := []int{1, 3, 5}
 	for _, metric := range dataMetricForReport {
 		err := reportMetric(client, serverAdderess, metric, logger)
+		if errors.Is(err, syscall.ECONNREFUSED) {
+			for _, val := range retryValue {
+				time.Sleep(time.Duration(val) * time.Second)
+				err := reportMetric(client, serverAdderess, metric, logger)
+				if !errors.Is(err, syscall.ECONNREFUSED) {
+					break
+				}
+			}
+		}
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
 		}
