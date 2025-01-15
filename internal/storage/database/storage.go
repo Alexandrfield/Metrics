@@ -97,6 +97,7 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	row := st.db.QueryRowContext(context.Background(),
 		"SELECT value FROM metrics WHERE (id = $1 AND mtype = $2)", name, typegauge)
+	st.Logger.Debugf("Gnry find etGauge name:%s", name)
 	var res common.TypeGauge
 	err := row.Scan(&res)
 	if err != nil {
