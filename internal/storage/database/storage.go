@@ -267,6 +267,8 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 			continue
 		}
 	}
+	st.Logger.Debugf("save ---> :%s;", qeryTest+qeryTestEnd)
+
 	if err := st.exec(context.Background(), tx, qeryTest+qeryTestEnd, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
