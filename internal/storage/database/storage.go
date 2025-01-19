@@ -42,7 +42,10 @@ func (st *MemDatabaseStorage) Start() error {
 	defer cancel()
 	err = st.createTable(ctx)
 	if err != nil {
-		st.db.Close()
+		errClose := st.db.Close()
+		if errClose != nil {
+			return fmt.Errorf("can not create table err:%w; end close connection to database err:%w:", err, errClose)
+		}
 		return fmt.Errorf("can not create table. err:%w", err)
 	}
 	return nil
@@ -67,24 +70,33 @@ func (st *MemDatabaseStorage) exec(ctx context.Context, query string, args ...an
 }
 
 func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) error {
-	_, err := st.GetGauge(name)
-	if err != nil {
-		st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
-		query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, query, name, typegauge, value); err != nil {
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-		}
-	} else {
-		st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
-		query := "UPDATE metrics SET value = $1 WHERE id = $2"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, query, value, name); err != nil {
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-		}
+
+	st.Logger.Debugf("----> gauge metric exist nmae:%s; value:%d; res:%d", name, value)
+	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON DUPLICATE (id) UPDATE value=$3"
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := st.exec(ctx, query, name, typegauge, value); err != nil {
+		return fmt.Errorf("--> error while trying to save counter metric %s: %w", name, err)
 	}
+
+	// _, err := st.GetGauge(name)
+	// if err != nil {
+	// 	st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
+	// 	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// 	defer cancel()
+	// 	if err := st.exec(ctx, query, name, typegauge, value); err != nil {
+	// 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+	// 	}
+	// } else {
+	// 	st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
+	// 	query := "UPDATE metrics SET value = $1 WHERE id = $2"
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// 	defer cancel()
+	// 	if err := st.exec(ctx, query, value, name); err != nil {
+	// 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+	// 	}
+	// }
 	return nil
 }
 func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
