@@ -248,16 +248,24 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	}
 	counter := 1
 	qeryTest := `INSERT INTO metrics (id, mtype, value) VALUES `
-	qeryTestEnd := `  ON CONFLICT (id) DO UPDATE SET `
+	qeryTestEnd := ` ON CONFLICT (id) DO UPDATE SET `
 	valuesForInsert := make([]any, 0)
-	for _, metric := range metrics {
+	for index, metric := range metrics {
 		switch metric.MType {
 		case "counter":
 			continue
 		case "gauge":
 			//query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4`
-			qeryTest += fmt.Sprintf("($%d, $%d, $%d),", counter, counter+1, counter+2)
-			qeryTestEnd += fmt.Sprintf(" value = $%d,", counter+2)
+			if index == 0 {
+				qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
+			} else {
+				qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
+			}
+			if index == 0 {
+				qeryTestEnd += fmt.Sprintf(" value = $%d", counter+2)
+			} else {
+				qeryTestEnd += fmt.Sprintf(", value = $%d", counter+2)
+			}
 			valuesForInsert = append(valuesForInsert, metric.ID)
 			valuesForInsert = append(valuesForInsert, typegauge)
 			valuesForInsert = append(valuesForInsert, metric.GetValueMetric())
