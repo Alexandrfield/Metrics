@@ -50,12 +50,18 @@ func (st *MemDatabaseStorage) Start() error {
 	}
 	return nil
 }
-func (st *MemDatabaseStorage) exec(ctx context.Context, query string, args ...any) error {
+
+type databaseDB interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+func (st *MemDatabaseStorage) exec(ctx context.Context, con databaseDB, query string, args ...any) error {
 	waitTime := []int{0, 1, 3, 5}
 	for _, val := range waitTime {
 		time.Sleep(time.Duration(val) * time.Second)
 		st.Logger.Debugf("Retry query to database:%s;%s;", query, args)
-		if _, err := st.db.ExecContext(ctx, query, args...); err != nil {
+		if _, err := con.ExecContext(ctx, query, args...); err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
 				st.Logger.Debugf("Retry query to database")
@@ -70,37 +76,39 @@ func (st *MemDatabaseStorage) exec(ctx context.Context, query string, args ...an
 }
 
 func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) error {
-
-	st.Logger.Debugf("----> gauge metric exist nmae:%s; value:%d; res:%d", name, value)
-	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON DUPLICATE (id) UPDATE value=$3"
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if err := st.exec(ctx, query, name, typegauge, value); err != nil {
-		return fmt.Errorf("--> error while trying to save counter metric %s: %w", name, err)
+	tx, err := st.db.Begin()
+	if err != nil {
+		return fmt.Errorf("can not create transaction. err:%w", err)
 	}
-
-	// _, err := st.GetGauge(name)
-	// if err != nil {
-	// 	st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
-	// 	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// 	defer cancel()
-	// 	if err := st.exec(ctx, query, name, typegauge, value); err != nil {
-	// 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-	// 	}
-	// } else {
-	// 	st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
-	// 	query := "UPDATE metrics SET value = $1 WHERE id = $2"
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	// 	defer cancel()
-	// 	if err := st.exec(ctx, query, value, name); err != nil {
-	// 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-	// 	}
-	// }
+	_, err = st.getGauge(tx, name)
+	if err != nil {
+		st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
+		query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+		}
+	} else {
+		st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
+		query := "UPDATE metrics SET value = $1 WHERE id = $2"
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := st.exec(ctx, tx, query, value, name); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("error with commit transactiom AddGauge. err:%w", err)
+	}
 	return nil
 }
-func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
-	row := st.db.QueryRowContext(context.Background(),
+
+func (st *MemDatabaseStorage) getGauge(con databaseDB, name string) (common.TypeGauge, error) {
+	row := con.QueryRowContext(context.Background(),
 		"SELECT value FROM metrics WHERE (id = $1 AND mtype = $2)", name, typegauge)
 	st.Logger.Debugf("Gnry find etGauge name:%s", name)
 	var res common.TypeGauge
@@ -111,31 +119,48 @@ func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
 	st.Logger.Debugf("GetGauge name:%s->:%d", name, res)
 	return res, nil
 }
+
+func (st *MemDatabaseStorage) GetGauge(name string) (common.TypeGauge, error) {
+	res, err := st.getGauge(st.db, name)
+	if err != nil {
+		return common.TypeGauge(0), fmt.Errorf("GetGage err:%w", err)
+	}
+	return res, nil
+}
 func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) error {
 	st.Logger.Debugf("addCounter to database. name:%s, value:%d", name, value)
-	val, err := st.GetCounter(name)
+	tx, err := st.db.Begin()
+	if err != nil {
+		return fmt.Errorf("can not create transaction AddCounter. err:%w", err)
+	}
+	val, err := st.getCounter(tx, name)
 	if err != nil {
 		st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
 		query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if err := st.exec(ctx, query, name, typecounter, value); err != nil {
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+		if err := st.exec(ctx, tx, query, name, typecounter, value); err != nil {
+			return fmt.Errorf("tx, error while trying to save counter metric %s: %w", name, err)
 		}
 	} else {
 		st.Logger.Debugf("counter metric exist nmae:%s; val:%d; value:%d; res:%d", name, val, value, val+value)
 		query := "UPDATE metrics SET delta = $1 WHERE id = $2"
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if err := st.exec(ctx, query, val+value, name); err != nil {
+		if err := st.exec(ctx, tx, query, val+value, name); err != nil {
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("error with commit transactiom AddCounter. err:%w", err)
 	}
 	st.Logger.Debugf("succes add counter metric name%s;", name)
 	return nil
 }
-func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
-	row := st.db.QueryRowContext(context.Background(),
+
+func (st *MemDatabaseStorage) getCounter(con databaseDB, name string) (common.TypeCounter, error) {
+	row := con.QueryRowContext(context.Background(),
 		"SELECT delta FROM metrics WHERE (id = $1 AND mtype = $2)", name, typecounter)
 	var res common.TypeCounter
 	st.Logger.Debugf("row:%s", row)
@@ -148,6 +173,13 @@ func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error
 	return res, nil
 }
 
+func (st *MemDatabaseStorage) GetCounter(name string) (common.TypeCounter, error) {
+	res, err := st.getCounter(st.db, name)
+	if err != nil {
+		return common.TypeCounter(0), fmt.Errorf("GetCounter err:%w", err)
+	}
+	return res, nil
+}
 func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 	allGaugeKeys := make([]string, 0)
 	allCounterKeys := make([]string, 0)
@@ -216,7 +248,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		case "gauge":
 			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) 
 			DO UPDATE SET value = $4;`
-			if err := st.exec(context.Background(), query, metric.ID, typegauge, common.TypeGauge(*metric.Value),
+			if err := st.exec(context.Background(), tx, query, metric.ID, typegauge, common.TypeGauge(*metric.Value),
 				common.TypeGauge(*metric.Value)); err != nil {
 				errr := tx.Rollback()
 				if errr != nil {
