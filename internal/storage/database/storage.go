@@ -255,13 +255,13 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		case "counter":
 			continue
 		case "gauge":
-			//query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4`
-			if index == 0 {
+			// query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $4`
+			if index == 1 {
 				qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
 			} else {
 				qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
 			}
-			if index == 0 {
+			if index == 1 {
 				qeryTestEnd += fmt.Sprintf(" value = $%d", counter+2)
 			} else {
 				qeryTestEnd += fmt.Sprintf(", value = $%d", counter+2)
