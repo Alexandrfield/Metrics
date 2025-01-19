@@ -226,10 +226,10 @@ func sendArrayMetric(client *http.Client, serverAdderess string, metrics []commo
 			logger.Warnf("resp.Body.Close() err: %s\n", err)
 		}
 	}()
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error reading body. err:%w", err)
-	}
+	// _, err = io.Copy(io.Discard, resp.Body)
+	// if err != nil {
+	// 	return fmt.Errorf("error reading body. err:%w", err)
+	// }
 	return nil
 }
 func reportAllMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,

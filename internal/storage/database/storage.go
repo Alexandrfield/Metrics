@@ -44,7 +44,7 @@ func (st *MemDatabaseStorage) Start() error {
 	if err != nil {
 		errClose := st.db.Close()
 		if errClose != nil {
-			return fmt.Errorf("can not create table err:%w; end close connection to database err:%w:", err, errClose)
+			return fmt.Errorf("can not create table err:%w; end close connection to database err:%w", err, errClose)
 		}
 		return fmt.Errorf("can not create table. err:%w", err)
 	}
@@ -87,7 +87,10 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
-			tx.Rollback()
+			errRol := tx.Rollback()
+			if errRol != nil {
+				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
+			}
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
 	} else {
@@ -96,7 +99,10 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := st.exec(ctx, tx, query, value, name); err != nil {
-			tx.Rollback()
+			errRol := tx.Rollback()
+			if errRol != nil {
+				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
+			}
 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 		}
 	}
