@@ -252,9 +252,9 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		case "counter":
 			continue
 		case "gauge":
-			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (id) 
-			DO UPDATE SET value = $4;`
-			if err := st.exec(context.Background(), tx, query, metric.ID, typegauge, common.TypeGauge(*metric.Value),
+			query := `INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)`
+			// ON CONFLICT (id) DO UPDATE SET value = $4;
+			if err := st.exec(context.Background(), tx, query, metric.ID, typegauge,
 				common.TypeGauge(*metric.Value)); err != nil {
 				errr := tx.Rollback()
 				if errr != nil {
