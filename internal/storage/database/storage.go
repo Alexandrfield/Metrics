@@ -35,7 +35,6 @@ func (st *MemDatabaseStorage) Start() error {
 	var err error
 	st.db, err = sql.Open("pgx", st.DatabaseDsn)
 	if err != nil {
-		st.db = nil
 		return fmt.Errorf("can not open database. err:%w", err)
 	}
 	st.Logger.Infof("Connect to db open")
@@ -43,7 +42,7 @@ func (st *MemDatabaseStorage) Start() error {
 	defer cancel()
 	err = st.createTable(ctx)
 	if err != nil {
-		st.db = nil
+		st.db.Close()
 		return fmt.Errorf("can not create table. err:%w", err)
 	}
 	return nil
@@ -181,15 +180,13 @@ func (st *MemDatabaseStorage) GetAllMetricName() ([]string, []string) {
 
 func (st *MemDatabaseStorage) PingDatabase() bool {
 	status := false
-	if st.db != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-		if err := st.db.PingContext(ctx); err == nil {
-			status = true
-			st.Logger.Infof("succesful ping")
-		} else {
-			st.Logger.Infof("Can not ping database. err:%w", err)
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err := st.db.PingContext(ctx); err == nil {
+		status = true
+		st.Logger.Infof("succesful ping")
+	} else {
+		st.Logger.Infof("Can not ping database. err:%w", err)
 	}
 	return status
 }

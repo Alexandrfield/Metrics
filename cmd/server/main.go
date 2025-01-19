@@ -43,10 +43,8 @@ func main() {
 		time.Sleep(1 * time.Second)
 		logger.Info("Server stoped")
 	}()
-	// config.DatabaseDsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-	//	`localhost`, `postgres`, `12345678`, `metrics`)
-	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:", config.ServerAdderess,
-		config.FileStoregePath, config.DatabaseDsn)
+	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:",
+		config.ServerAdderess, config.FileStoregePath)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
 		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore, DatabaseDsn: config.DatabaseDsn}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)

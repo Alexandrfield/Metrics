@@ -71,22 +71,29 @@ func prepareReportCounterMetrics(metricsCounter map[string]common.TypeCounter) [
 
 func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
-	retryValue := []int{1, 3, 5}
 	for _, metric := range dataMetricForReport {
-		err := reportMetric(client, serverAdderess, metric, logger)
-		if errors.Is(err, syscall.ECONNREFUSED) {
-			for _, val := range retryValue {
-				time.Sleep(time.Duration(val) * time.Second)
-				err := reportMetric(client, serverAdderess, metric, logger)
-				if !errors.Is(err, syscall.ECONNREFUSED) {
-					break
-				}
-			}
-		}
+		err := reportMetricWithRetry(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
+}
+
+func reportMetricWithRetry(client *http.Client, serverAdderess string, metric common.Metrics,
+	logger common.Loger) error {
+	secondWaitRetry := []int{0, 1, 3, 5}
+	var err error
+	for _, val := range secondWaitRetry {
+		time.Sleep(time.Duration(val) * time.Second)
+		err = reportMetric(client, serverAdderess, metric, logger)
+		if !errors.Is(err, syscall.ECONNREFUSED) {
+			if err != nil {
+				logger.Warnf("error report metric. err%s\n ", err)
+			}
+			break
+		}
+	}
+	return err
 }
 
 func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger,
@@ -138,7 +145,7 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
 	metricsCounter map[string]common.TypeCounter, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		err := reportMetric(client, serverAdderess, metric, logger)
+		err := reportMetricWithRetry(client, serverAdderess, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
