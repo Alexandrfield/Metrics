@@ -270,7 +270,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		valuesForInsert = append(valuesForInsert, metric.ID, typegauge, metric.GetValueMetric())
 		counter += 3
 	}
-	qeryTest += " ON DUPLICATE (id) DO UPDATE value = EXCLUDED.value"
+	qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
 	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
