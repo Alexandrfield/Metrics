@@ -57,6 +57,9 @@ type databaseDB interface {
 }
 
 func (st *MemDatabaseStorage) exec(ctx context.Context, con databaseDB, query string, args ...any) error {
+	if len(query) == 0 {
+		return nil
+	}
 	waitTime := []int{0, 1, 3, 5}
 	for _, val := range waitTime {
 		time.Sleep(time.Duration(val) * time.Second)
@@ -291,10 +294,11 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	}
 	counter := 1
 	valuesForInsert := make([]any, 0)
-	qeryTest := `INSERT INTO metrics (id, mtype, value) VALUES `
+	qeryTest := ""
 	for key, val := range metricsGaugeInsert {
 		if counter == 1 {
-			qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
+			qeryTest += fmt.Sprintf("INSERT INTO metrics (id, mtype, value) VALUES ($%d, $%d, $%d)",
+				counter, counter+1, counter+2)
 		} else {
 			qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
 		}
