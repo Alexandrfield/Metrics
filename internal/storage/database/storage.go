@@ -248,18 +248,18 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	}
 	metricsGauge := make(map[string]string)
 	for _, metric := range metrics {
-		metricsGauge[metric.ID] = metric.GetValueMetric()
+		if metric.MType == "gauge" {
+			metricsGauge[metric.ID] = metric.GetValueMetric()
+		}
 	}
 	metricsGaugeUpdate := make(map[string]string)
 	metricsGaugeInsert := make(map[string]string)
-	for _, metric := range metrics {
-		if metric.MType == "gauge" {
-			_, err := st.getGauge(tx, metric.ID)
-			if err != nil {
-				metricsGaugeInsert[metric.ID] = metric.GetValueMetric()
-			} else {
-				metricsGaugeUpdate[metric.ID] = metric.GetValueMetric()
-			}
+	for key, val := range metricsGauge {
+		_, err := st.getGauge(tx, key)
+		if err != nil {
+			metricsGaugeInsert[key] = val
+		} else {
+			metricsGaugeUpdate[key] = val
 		}
 	}
 	for key, val := range metricsGaugeUpdate {
