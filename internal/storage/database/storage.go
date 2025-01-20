@@ -169,7 +169,7 @@ func (st *MemDatabaseStorage) getCounter(con databaseDB, name string) (common.Ty
 	row := con.QueryRowContext(context.Background(),
 		"SELECT delta FROM metrics WHERE (id = $1 AND mtype = $2)", name, typecounter)
 	var res common.TypeCounter
-	st.Logger.Debugf("row:%s", row)
+	st.Logger.Debugf("SELECT delta FROM metrics WHERE (id = %s AND mtype = %s)", name, typecounter)
 	err := row.Scan(&res)
 	if err != nil {
 		st.Logger.Debugf("cant find name:%s; err:%w", name, err)
@@ -248,16 +248,17 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	}
 	metricsGauge := make(map[string]string)
 	metricsCounter := make(map[string]common.Metrics)
-	for _, metric := range metrics {
+	for indexNum, metric := range metrics {
+		st.Logger.Infof("%d) try add ID:%s; MType:%s; value:%d; delta:%d", indexNum, metric.ID, metric.MType, metric.Value, metric.Delta)
 		switch metric.MType {
 		case "counter":
-			new_val := *metric.Delta
+			newVal := *metric.Delta
 			val, ok := metricsCounter[metric.ID]
 			if ok {
-				new_val += *val.Delta
+				newVal += *val.Delta
 			}
-			new_val += *metric.Delta
-			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &new_val}
+			newVal += *metric.Delta
+			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &newVal}
 		case "gauge":
 			metricsGauge[metric.ID] = metric.GetValueMetric()
 		default:
@@ -297,7 +298,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		valuesForInsert = append(valuesForInsert, key, typegauge, val)
 		counter += 3
 	}
-	//qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
+	// qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
 	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
