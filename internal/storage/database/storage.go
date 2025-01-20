@@ -274,15 +274,16 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	metricsGaugeUpdate := make(map[string]string)
 	metricsGaugeInsert := make(map[string]string)
 	for key, val := range metricsGauge {
-		_, err := st.getGauge(tx, key)
-		if err != nil {
-			metricsGaugeInsert[key] = val
-		} else {
-			metricsGaugeUpdate[key] = val
-		}
+		metricsGaugeInsert[key] = val
+		// _, err := st.getGauge(tx, key)
+		// if err != nil {
+		// 	metricsGaugeInsert[key] = val
+		// } else {
+		// 	metricsGaugeUpdate[key] = val
+		// }
 	}
 	for key, val := range metricsGaugeUpdate {
-		query := "UPDATE metrics SET value = $1 WHERE id = $2"
+		query := "UPDATE metrics SET value = $1 WHERE id = $ 2"
 		if err := st.exec(context.Background(), tx, query, val, key); err != nil {
 			errr := tx.Rollback()
 			if errr != nil {
@@ -305,7 +306,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		valuesForInsert = append(valuesForInsert, key, typegauge, val)
 		counter += 3
 	}
-	// qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
+	qeryTest += " ON CONFLICT (ID) DO UPDATE SET value = EXCLUDED.value"
 	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
