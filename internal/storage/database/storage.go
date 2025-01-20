@@ -249,10 +249,11 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	metricsGauge := make(map[string]string)
 	metricsCounter := make(map[string]common.Metrics)
 	for indexNum, metric := range metrics {
-		st.Logger.Infof("%d) try add ID:%s; MType:%s; value:%d; delta:%d",
-			indexNum, metric.ID, metric.MType, *metric.Value, *metric.Delta)
 		switch metric.MType {
 		case "counter":
+			st.Logger.Infof("%d) try add ID:%s; MType:%s; delta:%d",
+				indexNum, metric.ID, metric.MType, *metric.Delta)
+
 			newVal := *metric.Delta
 			val, ok := metricsCounter[metric.ID]
 			if ok {
@@ -261,6 +262,8 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 			newVal += *metric.Delta
 			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &newVal}
 		case "gauge":
+			st.Logger.Infof("%d) try add ID:%s; MType:%s; value:%d;",
+				indexNum, metric.ID, metric.MType, *metric.Value)
 			metricsGauge[metric.ID] = metric.GetValueMetric()
 		default:
 			continue
