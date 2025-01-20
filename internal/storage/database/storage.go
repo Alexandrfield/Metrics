@@ -281,7 +281,7 @@ func (st *MemDatabaseStorage) addCounterMetrics(tx databaseDB, metricsCounter ma
 		counter += 3
 	}
 	if len(qery) != 0 {
-		qery += " ON CONFLICT (ID) DO UPDATE SET delta += EXCLUDED.delta"
+		qery += " ON CONFLICT (ID) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta"
 	}
 	if err := st.exec(context.Background(), tx, qery, valuesForInsert...); err != nil {
 		return fmt.Errorf("error while trying to save all counter metric: %w", err)
