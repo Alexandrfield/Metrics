@@ -244,67 +244,96 @@ func (st *MemDatabaseStorage) PingDatabase() bool {
 	return status
 }
 
+func (st *MemDatabaseStorage) addGaugeMetrics(tx databaseDB, metricsGauge map[string]common.TypeGauge) error {
+	counter := 1
+	valuesForInsert := make([]any, 0)
+	qery := ""
+	for key, val := range metricsGauge {
+		if counter == 1 {
+			qery += fmt.Sprintf("INSERT INTO metrics (id, mtype, value) VALUES ($%d, $%d, $%d)",
+				counter, counter+1, counter+2)
+		} else {
+			qery += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
+		}
+		valuesForInsert = append(valuesForInsert, key, typegauge, val)
+		counter += 3
+	}
+	if len(qery) != 0 {
+		qery += " ON CONFLICT (ID) DO UPDATE SET value = EXCLUDED.value"
+	}
+	if err := st.exec(context.Background(), tx, qery, valuesForInsert...); err != nil {
+		return fmt.Errorf("error while trying to save all gauge metric: %w", err)
+	}
+	return nil
+}
+func (st *MemDatabaseStorage) addCounterMetrics(tx databaseDB, metricsCounter map[string]common.TypeCounter) error {
+	counter := 1
+	valuesForInsert := make([]any, 0)
+	qery := ""
+	for key, val := range metricsCounter {
+		if counter == 1 {
+			qery += fmt.Sprintf("INSERT INTO metrics (id, mtype, delta) VALUES ($%d, $%d, $%d)",
+				counter, counter+1, counter+2)
+		} else {
+			qery += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
+		}
+		valuesForInsert = append(valuesForInsert, key, typecounter, val)
+		counter += 3
+	}
+	if len(qery) != 0 {
+		qery += " ON CONFLICT (ID) DO UPDATE SET delta += EXCLUDED.delta"
+	}
+	if err := st.exec(context.Background(), tx, qery, valuesForInsert...); err != nil {
+		return fmt.Errorf("error while trying to save all counter metric: %w", err)
+	}
+	return nil
+}
+
 func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	tx, err := st.db.Begin()
 	if err != nil {
 		return fmt.Errorf("can not start transactiom. err:%w", err)
 	}
-	metricsGauge := make(map[string]string)
-	metricsCounter := make(map[string]common.Metrics)
+	metricsGauge := make(map[string]common.TypeGauge)
+	metricsCounter := make(map[string]common.TypeCounter)
 	for indexNum, metric := range metrics {
 		switch metric.MType {
 		case "counter":
 			st.Logger.Infof("%d) try add ID:%s; MType:%s; delta:%d",
 				indexNum, metric.ID, metric.MType, *metric.Delta)
-			newVal := *metric.Delta
+			newVal := common.TypeCounter(*metric.Delta)
 			val, ok := metricsCounter[metric.ID]
 			if ok {
-				newVal += *val.Delta
+				newVal += val
 			}
-			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &newVal}
+			metricsCounter[metric.ID] = newVal
 		case "gauge":
 			st.Logger.Infof("%d) try add ID:%s; MType:%s; value:%d;",
 				indexNum, metric.ID, metric.MType, *metric.Value)
-			metricsGauge[metric.ID] = metric.GetValueMetric()
+			metricsGauge[metric.ID] = common.TypeGauge(*metric.Value)
 		default:
 			continue
 		}
 	}
-	counter := 1
-	valuesForInsert := make([]any, 0)
-	qeryTest := ""
-	for key, val := range metricsGauge {
-		if counter == 1 {
-			qeryTest += fmt.Sprintf("INSERT INTO metrics (id, mtype, value) VALUES ($%d, $%d, $%d)",
-				counter, counter+1, counter+2)
-		} else {
-			qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
-		}
-		valuesForInsert = append(valuesForInsert, key, typegauge, val)
-		counter += 3
-	}
-	if len(qeryTest) != 0 {
-		qeryTest += " ON CONFLICT (ID) DO UPDATE SET value = EXCLUDED.value"
-	}
-	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
+	err = st.addGaugeMetrics(tx, metricsGauge)
+	if err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
 			return fmt.Errorf("error while trying to save batch gauge: err%w;And can not rollback! err:%w",
 				err, errr)
 		}
-		return fmt.Errorf("error while trying to save all gauge metric: %w", err)
+	}
+	err = st.addCounterMetrics(tx, metricsCounter)
+	if err != nil {
+		errr := tx.Rollback()
+		if errr != nil {
+			return fmt.Errorf("error while trying to save batch gauge: err%w;And can not rollback! err:%w",
+				err, errr)
+		}
 	}
 	comerr := tx.Commit()
 	if comerr != nil {
 		return fmt.Errorf("error with commit transactiom. err:%w", err)
-	}
-	for _, metric := range metricsCounter {
-		switch metric.MType {
-		case "counter":
-			_ = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
-		default:
-			continue
-		}
 	}
 
 	return nil
