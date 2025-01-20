@@ -247,9 +247,21 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		return fmt.Errorf("can not start transactiom. err:%w", err)
 	}
 	metricsGauge := make(map[string]string)
+	metricsCounter := make(map[string]common.Metrics)
 	for _, metric := range metrics {
-		if metric.MType == "gauge" {
+		switch metric.MType {
+		case "counter":
+			new_val := *metric.Delta
+			val, ok := metricsCounter[metric.ID]
+			if ok {
+				new_val += *val.Delta
+			}
+			new_val += *metric.Delta
+			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &new_val}
+		case "gauge":
 			metricsGauge[metric.ID] = metric.GetValueMetric()
+		default:
+			continue
 		}
 	}
 	metricsGaugeUpdate := make(map[string]string)
@@ -341,7 +353,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	if comerr != nil {
 		return fmt.Errorf("error with commit transactiom. err:%w", err)
 	}
-	for _, metric := range metrics {
+	for _, metric := range metricsCounter {
 		switch metric.MType {
 		case "counter":
 			_ = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
