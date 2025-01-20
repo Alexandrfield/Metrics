@@ -270,6 +270,7 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		valuesForInsert = append(valuesForInsert, metric.ID, typegauge, metric.GetValueMetric())
 		counter += 3
 	}
+	qeryTest += " ON DUPLICATE KEY UPDATE value = VALUES(value)"
 	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
@@ -278,6 +279,27 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 		}
 		return fmt.Errorf("error while trying to save all gauge metric: %w", err)
 	}
+
+	// counter := 1
+	// valuesForInsert := make([]any, 0)
+	// qeryTest := `INSERT INTO metrics (id, mtype, value) VALUES `
+	// for _, metric := range metricsGaugeInsert {
+	// 	if counter == 1 {
+	// 		qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
+	// 	} else {
+	// 		qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
+	// 	}
+	// 	valuesForInsert = append(valuesForInsert, metric.ID, typegauge, metric.GetValueMetric())
+	// 	counter += 3
+	// }
+	// if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
+	// 	errr := tx.Rollback()
+	// 	if errr != nil {
+	// 		return fmt.Errorf("error while trying to save batch gauge: err%w;And can not rollback! err:%w",
+	// 			err, errr)
+	// 	}
+	// 	return fmt.Errorf("error while trying to save all gauge metric: %w", err)
+	// }
 
 	for _, metric := range metricsGaugeUpdate {
 		query := "UPDATE metrics SET value = $1 WHERE id = $2"
