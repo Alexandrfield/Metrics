@@ -246,31 +246,46 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	if err != nil {
 		return fmt.Errorf("can not start transactiom. err:%w", err)
 	}
-	metricsGaugeUpdate := make([]common.Metrics, 0)
-	metricsGaugeInsert := make([]common.Metrics, 0)
+	metricsGauge := make(map[string]string)
+	for _, metric := range metrics {
+		metricsGauge[metric.ID] = metric.GetValueMetric()
+	}
+	metricsGaugeUpdate := make(map[string]string)
+	metricsGaugeInsert := make(map[string]string)
 	for _, metric := range metrics {
 		if metric.MType == "gauge" {
 			_, err := st.getGauge(tx, metric.ID)
 			if err != nil {
-				metricsGaugeInsert = append(metricsGaugeInsert, metric)
+				metricsGaugeInsert[metric.ID] = metric.GetValueMetric()
 			} else {
-				metricsGaugeUpdate = append(metricsGaugeUpdate, metric)
+				metricsGaugeUpdate[metric.ID] = metric.GetValueMetric()
 			}
+		}
+	}
+	for key, val := range metricsGaugeUpdate {
+		query := "UPDATE metrics SET value = $1 WHERE id = $2"
+		if err := st.exec(context.Background(), tx, query, val, key); err != nil {
+			errr := tx.Rollback()
+			if errr != nil {
+				return fmt.Errorf("error while trying to save batch gauge: err%w;And can not rollback! err:%w",
+					err, errr)
+			}
+			return fmt.Errorf("error while trying to save all gauge metric: %w", err)
 		}
 	}
 	counter := 1
 	valuesForInsert := make([]any, 0)
 	qeryTest := `INSERT INTO metrics (id, mtype, value) VALUES `
-	for _, metric := range metricsGaugeInsert {
+	for key, val := range metricsGaugeInsert {
 		if counter == 1 {
 			qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
 		} else {
 			qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
 		}
-		valuesForInsert = append(valuesForInsert, metric.ID, typegauge, metric.GetValueMetric())
+		valuesForInsert = append(valuesForInsert, key, typegauge, val)
 		counter += 3
 	}
-	qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
+	//qeryTest += " ON DUPLICATE KEY DO UPDATE value = EXCLUDED.value"
 	if err := st.exec(context.Background(), tx, qeryTest, valuesForInsert...); err != nil {
 		errr := tx.Rollback()
 		if errr != nil {
@@ -300,18 +315,6 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	// 	}
 	// 	return fmt.Errorf("error while trying to save all gauge metric: %w", err)
 	// }
-
-	for _, metric := range metricsGaugeUpdate {
-		query := "UPDATE metrics SET value = $1 WHERE id = $2"
-		if err := st.exec(context.Background(), tx, query, metric.GetValueMetric(), metric.ID); err != nil {
-			errr := tx.Rollback()
-			if errr != nil {
-				return fmt.Errorf("error while trying to save batch gauge: err%w;And can not rollback! err:%w",
-					err, errr)
-			}
-			return fmt.Errorf("error while trying to save all gauge metric: %w", err)
-		}
-	}
 	for _, metric := range metrics {
 		switch metric.MType {
 		case "counter":
