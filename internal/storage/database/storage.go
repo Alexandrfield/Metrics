@@ -261,8 +261,8 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	counter := 1
 	valuesForInsert := make([]any, 0)
 	qeryTest := `INSERT INTO metrics (id, mtype, value) VALUES `
-	for index, metric := range metricsGaugeInsert {
-		if index == 1 {
+	for _, metric := range metricsGaugeInsert {
+		if counter == 1 {
 			qeryTest += fmt.Sprintf(" ($%d, $%d, $%d)", counter, counter+1, counter+2)
 		} else {
 			qeryTest += fmt.Sprintf(", ($%d, $%d, $%d)", counter, counter+1, counter+2)
