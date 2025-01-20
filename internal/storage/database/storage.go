@@ -259,7 +259,6 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 			if ok {
 				newVal += *val.Delta
 			}
-			newVal += *metric.Delta
 			metricsCounter[metric.ID] = common.Metrics{ID: metric.ID, MType: typecounter, Delta: &newVal}
 		case "gauge":
 			st.Logger.Infof("%d) try add ID:%s; MType:%s; value:%d;",
