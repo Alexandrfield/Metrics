@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -127,7 +128,7 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 	if err != nil {
 		logger.Warnf("Error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
-		req.Header.Add("HashSHA256", string(sig))
+		req.Header.Add("HashSHA256", hex.EncodeToString(sig))
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -223,8 +224,8 @@ func sendArrayMetric(client *http.Client, config Config, metrics []common.Metric
 	if err != nil {
 		logger.Warnf("error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
-		logger.Debugf("try set HashSHA256 sign: %s", string(sig))
-		req.Header.Set("HashSHA256", "aaaa")
+		logger.Debugf("try set HashSHA256 sign: %s", hex.EncodeToString(sig))
+		req.Header.Set("HashSHA256", hex.EncodeToString(sig))
 	}
 	resp, err := client.Do(req)
 	if err != nil {
