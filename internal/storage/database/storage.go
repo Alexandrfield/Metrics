@@ -85,7 +85,7 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 	}
 
 	st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
-	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (ID) UPDATE SET value = EXCLUDED.value "
+	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET value = EXCLUDED.value "
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
@@ -167,7 +167,7 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 		return fmt.Errorf("can not create transaction AddCounter. err:%w", err)
 	}
 	st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
-	query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (ID) UPDATE SET delta = metrics.delta + EXCLUDED.delta"
+	query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET delta = metrics.delta + EXCLUDED.delta"
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := st.exec(ctx, tx, query, name, typecounter, value); err != nil {
