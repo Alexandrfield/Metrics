@@ -223,6 +223,7 @@ func sendArrayMetric(client *http.Client, config Config, metrics []common.Metric
 	if err != nil {
 		logger.Warnf("error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
+		logger.Debugf("try set HashSHA256 sign: %s\n", string(sig))
 		req.Header.Set("HashSHA256", string(sig))
 	}
 	resp, err := client.Do(req)
