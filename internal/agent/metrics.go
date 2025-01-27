@@ -127,7 +127,7 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 	if err != nil {
 		logger.Warnf("Error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
-		req.Header.Set("HashSHA256", string(sig))
+		req.Header.Add("HashSHA256", string(sig))
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -224,7 +224,7 @@ func sendArrayMetric(client *http.Client, config Config, metrics []common.Metric
 		logger.Warnf("error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
 		logger.Debugf("try set HashSHA256 sign: %s\n", string(sig))
-		req.Header.Set("HashSHA256", string(sig))
+		req.Header.Add("HashSHA256", string(sig))
 	}
 	resp, err := client.Do(req)
 	if err != nil {
