@@ -2,7 +2,6 @@ package server
 
 import (
 	"compress/gzip"
-	"crypto/hmac"
 	"errors"
 	"fmt"
 	"io"
@@ -123,25 +122,6 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func checkHash(msg []byte, signMsg []byte, signKey []byte) (bool, error) {
-	if r.Header.Get("HashSHA256"){
-
-	}
-	actualSign, _ := common.Sign(msg, signKey)
-	if hmac.Equal(actualSign, signMsg) {
-		return true, nil
-	} else {
-		return false, nil
-	}
-
-	if {
-		isSignTrue , _ := checkHash()
-		if isSignTrue {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
-}
 func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

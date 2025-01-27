@@ -23,11 +23,12 @@ type MetricsStorage interface {
 type MetricServer struct {
 	logger     common.Loger
 	memStorage MetricsStorage
+	signKey    []byte
 }
 
-func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
+func parseURL(data string, logger common.Loger) (common.Metrics, int) {
 	var metric common.Metrics
-	url := strings.Split(req.URL.String(), "/")
+	url := strings.Split(data, "/")
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
 	// Content-Type: text/plain
 	if url[1] == "update" {
@@ -101,9 +102,18 @@ func (rep *MetricServer) updateValues(metrics []common.Metrics) error {
 }
 func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	body := req.Body
-	rep.logger.Debugf("UpdateJSONValue body:%v", body)
-	if err := json.NewDecoder(body).Decode(&metric); err != nil {
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	msgSign := req.Header.Get("HashSHA256")
+	if msgSign != "" && len(data) > 0 {
+		if !common.CheckHash(data, []byte(msgSign), rep.signKey) {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	rep.logger.Debugf("UpdateJSONValue data body:%v", data)
+	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -137,7 +147,17 @@ func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Reque
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	rep.logger.Debugf("UpdateValue")
-	metric, retStatus := parseURL(req, rep.logger)
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	msgSign := req.Header.Get("HashSHA256")
+	if msgSign != "" && len(data) > 0 {
+		if !common.CheckHash(data, []byte(msgSign), rep.signKey) {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus == http.StatusOK {
 		rep.logger.Debugf("update value metric:%s; delta:%s", metric, metric.Delta)
 		err := rep.updateValue(&metric)
@@ -180,9 +200,18 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 }
 func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	body := req.Body
-	rep.logger.Debugf("GetJSONValue body:%v", body)
-	if err := json.NewDecoder(body).Decode(&metric); err != nil {
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	msgSign := req.Header.Get("HashSHA256")
+	if msgSign != "" && len(data) > 0 {
+		if !common.CheckHash(data, []byte(msgSign), rep.signKey) {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	rep.logger.Debugf("GetJSONValue body:%v", data)
+	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -197,6 +226,12 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	sig, err := common.Sign(resp, rep.signKey)
+	if err != nil {
+		rep.logger.Warnf("Error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		req.Header.Set("HashSHA256", string(sig))
+	}
 	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
 	if err != nil {
@@ -204,16 +239,33 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	metric, retStatus := parseURL(req, rep.logger)
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	msgSign := req.Header.Get("HashSHA256")
+	if msgSign != "" && len(data) > 0 {
+		if !common.CheckHash(data, []byte(msgSign), rep.signKey) {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus != http.StatusOK {
 		res.WriteHeader(retStatus)
 		return
 	}
 
 	retStatus = rep.getValue(&metric)
-
+	resp := []byte(metric.GetValueMetric())
 	res.WriteHeader(retStatus)
-	_, err := res.Write([]byte(metric.GetValueMetric()))
+	sig, err := common.Sign(resp, rep.signKey)
+	if err != nil {
+		rep.logger.Warnf("Error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		req.Header.Set("HashSHA256", string(sig))
+	}
+
+	_, err = res.Write(resp)
 	if err != nil {
 		rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", metric.MType, metric.ID, err)
 	}

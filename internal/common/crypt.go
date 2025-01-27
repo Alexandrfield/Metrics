@@ -23,3 +23,8 @@ func Sign(msg []byte, signKey []byte) ([]byte, error) {
 	h.Write(msg)
 	return h.Sum(nil), nil
 }
+
+func CheckHash(msg []byte, msgSign []byte, signKey []byte) bool {
+	actualSign, _ := Sign(msg, signKey)
+	return hmac.Equal(actualSign, msgSign)
+}
