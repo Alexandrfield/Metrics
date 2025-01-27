@@ -7,10 +7,10 @@ import (
 )
 
 type MetricsMap struct {
-	mutexMetricsGauge   sync.RWMutex
-	mutexMetricsCounter sync.RWMutex
 	metricsGauge        map[string]common.TypeGauge
 	metricsCounter      map[string]common.TypeCounter
+	mutexMetricsGauge   sync.RWMutex
+	mutexMetricsCounter sync.RWMutex
 }
 
 func (metr *MetricsMap) Initializate() {
