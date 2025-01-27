@@ -16,6 +16,8 @@ func parseFlags(conf *Config) error {
 		"interval in seconds  for sending report to server [default: 10 second]")
 	flag.IntVar(&conf.PollIntervalSecond, "p", 2,
 		"interval in seconds for check metrics [default: 2 second]")
+	flag.IntVar(&conf.RateLimit, "l", 1,
+		"limit count reqyst in time [default: 1]")
 	var signKey string
 	flag.StringVar(&signKey, "k", "",
 		"key for sign [default: nil]")
@@ -34,6 +36,14 @@ func parseFlags(conf *Config) error {
 		return fmt.Errorf("try get sign key: %w", err)
 	}
 
+	if envRateLimit, ok := os.LookupEnv("RATE_LIMIT"); ok {
+		value, err := strconv.Atoi(envRateLimit)
+		if err != nil {
+			return fmt.Errorf("try atoi . value; err: %w", err)
+		} else {
+			conf.RateLimit = value
+		}
+	}
 	if envReportIntervalSecond, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		value, err := strconv.Atoi(envReportIntervalSecond)
 		if err != nil {

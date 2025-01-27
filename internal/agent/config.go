@@ -5,4 +5,5 @@ type Config struct {
 	SignKey              []byte
 	PollIntervalSecond   int
 	ReportIntervalSecond int
+	RateLimit            int
 }

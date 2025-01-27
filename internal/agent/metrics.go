@@ -15,59 +15,49 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
-func updateGaugeMetrics(metrics map[string]common.TypeGauge) {
+func updateGaugeMetrics(metrics *MetricsMap) {
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
-	metrics["Alloc"] = common.TypeGauge(rtm.Alloc)
-	metrics["BuckHashSys"] = common.TypeGauge(rtm.BuckHashSys)
-	metrics["Frees"] = common.TypeGauge(rtm.Frees)
-	metrics["GCCPUFraction"] = common.TypeGauge(rtm.GCCPUFraction)
-	metrics["GCSys"] = common.TypeGauge(rtm.GCSys)
-	metrics["HeapAlloc"] = common.TypeGauge(rtm.HeapAlloc)
-	metrics["HeapIdle"] = common.TypeGauge(rtm.HeapIdle)
-	metrics["HeapInuse"] = common.TypeGauge(rtm.HeapInuse)
-	metrics["HeapObjects"] = common.TypeGauge(rtm.HeapObjects)
-	metrics["HeapReleased"] = common.TypeGauge(rtm.HeapReleased)
-	metrics["HeapSys"] = common.TypeGauge(rtm.HeapSys)
-	metrics["LastGC"] = common.TypeGauge(rtm.LastGC)
-	metrics["Lookups"] = common.TypeGauge(rtm.Lookups)
-	metrics["MCacheInuse"] = common.TypeGauge(rtm.MCacheInuse)
-	metrics["MCacheSys"] = common.TypeGauge(rtm.MCacheSys)
-	metrics["MSpanInuse"] = common.TypeGauge(rtm.MSpanInuse)
-	metrics["MSpanSys"] = common.TypeGauge(rtm.MSpanSys)
-	metrics["Mallocs"] = common.TypeGauge(rtm.Mallocs)
-	metrics["NextGC"] = common.TypeGauge(rtm.NextGC)
-	metrics["NumForcedGC"] = common.TypeGauge(rtm.NumForcedGC)
-	metrics["NumGC"] = common.TypeGauge(rtm.NumGC)
-	metrics["OtherSys"] = common.TypeGauge(rtm.OtherSys)
-	metrics["PauseTotalNs"] = common.TypeGauge(rtm.PauseTotalNs)
-	metrics["StackInuse"] = common.TypeGauge(rtm.StackInuse)
-	metrics["StackSys"] = common.TypeGauge(rtm.StackSys)
-	metrics["Sys"] = common.TypeGauge(rtm.Sys)
-	metrics["TotalAlloc"] = common.TypeGauge(rtm.TotalAlloc)
-	metrics["RandomValue"] = common.TypeGauge(rand.Float64())
+	metrics.UpdateGauge("Alloc", common.TypeGauge(rtm.Alloc))
+	metrics.UpdateGauge("BuckHashSys", common.TypeGauge(rtm.BuckHashSys))
+	metrics.UpdateGauge("Frees", common.TypeGauge(rtm.Frees))
+	metrics.UpdateGauge("GCCPUFraction", common.TypeGauge(rtm.GCCPUFraction))
+	metrics.UpdateGauge("GCSys", common.TypeGauge(rtm.GCSys))
+	metrics.UpdateGauge("HeapAlloc", common.TypeGauge(rtm.HeapAlloc))
+	metrics.UpdateGauge("HeapIdle", common.TypeGauge(rtm.HeapIdle))
+	metrics.UpdateGauge("HeapInuse", common.TypeGauge(rtm.HeapInuse))
+	metrics.UpdateGauge("HeapObjects", common.TypeGauge(rtm.HeapObjects))
+	metrics.UpdateGauge("HeapReleased", common.TypeGauge(rtm.HeapReleased))
+	metrics.UpdateGauge("HeapSys", common.TypeGauge(rtm.HeapSys))
+	metrics.UpdateGauge("LastGC", common.TypeGauge(rtm.LastGC))
+	metrics.UpdateGauge("Lookups", common.TypeGauge(rtm.Lookups))
+	metrics.UpdateGauge("MCacheInuse", common.TypeGauge(rtm.MCacheInuse))
+	metrics.UpdateGauge("MCacheSys", common.TypeGauge(rtm.MCacheSys))
+	metrics.UpdateGauge("MSpanInuse", common.TypeGauge(rtm.MSpanInuse))
+	metrics.UpdateGauge("MSpanSys", common.TypeGauge(rtm.MSpanSys))
+	metrics.UpdateGauge("Mallocs", common.TypeGauge(rtm.Mallocs))
+	metrics.UpdateGauge("NextGC", common.TypeGauge(rtm.NextGC))
+	metrics.UpdateGauge("NumForcedGC", common.TypeGauge(rtm.NumForcedGC))
+	metrics.UpdateGauge("NumGC", common.TypeGauge(rtm.NumGC))
+	metrics.UpdateGauge("OtherSys", common.TypeGauge(rtm.OtherSys))
+	metrics.UpdateGauge("PauseTotalNs", common.TypeGauge(rtm.PauseTotalNs))
+	metrics.UpdateGauge("StackInuse", common.TypeGauge(rtm.StackInuse))
+	metrics.UpdateGauge("StackSys", common.TypeGauge(rtm.StackSys))
+	metrics.UpdateGauge("Sys", common.TypeGauge(rtm.Sys))
+	metrics.UpdateGauge("TotalAlloc", common.TypeGauge(rtm.TotalAlloc))
+	metrics.UpdateGauge("RandomValue", common.TypeGauge(rand.Float64()))
 }
-func updateCounterMetrics(metrics map[string]common.TypeCounter) {
-	metrics["PollCount"]++
+func SaveAdditionalMetrics(metrics *MetricsMap) {
+	v, _ := mem.VirtualMemory()
+	metrics.UpdateGauge("TotalMemory", common.TypeGauge(v.TotalMemory))
+	metrics.UpdateGauge("FreeMemory", common.TypeGauge(v.FreeMemory))
+	metrics.UpdateGauge("CPUutilization1", common.TypeGauge(rand.Float64()))
 }
-func prepareReportGaugeMetrics(metricsGauge map[string]common.TypeGauge) []common.Metrics {
-	dataMetricForReport := make([]common.Metrics, 0)
-	for key, value := range metricsGauge {
-		temp := float64(value)
-		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "gauge", Value: &temp})
-	}
-	return dataMetricForReport
-}
-
-func prepareReportCounterMetrics(metricsCounter map[string]common.TypeCounter) []common.Metrics {
-	dataMetricForReport := make([]common.Metrics, 0)
-	for key, value := range metricsCounter {
-		temp := int64(value)
-		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "counter", Delta: &temp})
-	}
-	return dataMetricForReport
+func updateCounterMetrics(metrics *MetricsMap) {
+	metrics.UpdateCounter("PollCount", common.TypeCounter(1))
 }
 
 func reportMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
@@ -149,14 +139,14 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 }
 
 func reportCounterMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
-	metricsCounter map[string]common.TypeCounter, logger common.Loger) {
+	metrics *MetricsMap, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
 		err := reportMetricWithRetry(client, config, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
 		} else {
-			metricsCounter[metric.ID] -= common.TypeCounter(*metric.Delta)
+			metrics.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
 		}
 	}
 }
@@ -164,26 +154,25 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 	var isBatch = true
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
-	metricsGauge := make(map[string]common.TypeGauge)
-	metricsCounter := make(map[string]common.TypeCounter)
-	metricsCounter["PollCount"] = 0
+	metrics := MetricsMap{}
+	metrics.Initializate()
 	for {
 		select {
 		case <-done:
 			return
 		case <-tickerPoolInterval.C:
-			updateGaugeMetrics(metricsGauge)
-			updateCounterMetrics(metricsCounter)
+			updateGaugeMetrics(metrics)
+			updateCounterMetrics(metrics)
 		case <-tickerReportInterval.C:
-			metricsForReport := prepareReportGaugeMetrics(metricsGauge)
-			metricsCounterReport := prepareReportCounterMetrics(metricsCounter)
+			metricsForReport := metrics.PrepareReportGaugeMetrics()
+			metricsCounterReport := metrics.PrepareReportCounterMetrics()
 			if isBatch {
 				metricsForReport = append(metricsForReport, metricsCounterReport...)
 				err := reportAllMetrics(client, config, metricsForReport, logger)
 				if err != nil {
 					logger.Warnf("error for send all metrics. err:%s", err)
 				} else {
-					cleanCounterMetric(metricsCounter)
+					//cleanCounterMetric(metricsCounter)
 				}
 			} else {
 				reportMetrics(client, config, metricsForReport, logger)
