@@ -8,8 +8,8 @@ import (
 
 type MetricsMap struct {
 	mutexMetricsGauge   sync.RWMutex
-	metricsGauge        map[string]common.TypeGauge
 	mutexMetricsCounter sync.RWMutex
+	metricsGauge        map[string]common.TypeGauge
 	metricsCounter      map[string]common.TypeCounter
 }
 
@@ -42,6 +42,8 @@ func (metr *MetricsMap) GetCounter(name string) common.TypeCounter {
 	return metr.metricsCounter[name]
 }
 func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
+	metr.mutexMetricsGauge.RLock()
+	defer metr.mutexMetricsGauge.RUnlock()
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metr.metricsGauge {
 		temp := float64(value)
@@ -51,6 +53,8 @@ func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
 }
 
 func (metr *MetricsMap) PrepareReportCounterMetrics() []common.Metrics {
+	metr.mutexMetricsCounter.RLock()
+	defer metr.mutexMetricsCounter.RUnlock()
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metr.metricsCounter {
 		temp := int64(value)
