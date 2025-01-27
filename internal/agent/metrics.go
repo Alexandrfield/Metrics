@@ -69,23 +69,23 @@ func prepareReportCounterMetrics(metricsCounter map[string]common.TypeCounter) [
 	return dataMetricForReport
 }
 
-func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+func reportMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		err := reportMetricWithRetry(client, serverAdderess, metric, logger)
+		err := reportMetricWithRetry(client, config, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
 		}
 	}
 }
 
-func reportMetricWithRetry(client *http.Client, serverAdderess string, metric common.Metrics,
+func reportMetricWithRetry(client *http.Client, config Config, metric common.Metrics,
 	logger common.Loger) error {
 	secondWaitRetry := []int{0, 1, 3, 5}
 	var err error
 	for _, val := range secondWaitRetry {
 		time.Sleep(time.Duration(val) * time.Second)
-		err = reportMetric(client, serverAdderess, metric, logger)
+		err = reportMetric(client, config, metric, logger)
 		if !errors.Is(err, syscall.ECONNREFUSED) {
 			if err != nil {
 				logger.Warnf("error report metric. err%s\n ", err)
@@ -96,13 +96,13 @@ func reportMetricWithRetry(client *http.Client, serverAdderess string, metric co
 	return err
 }
 
-func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger,
+func reportMetric(client *http.Client, config Config, metric common.Metrics, logger common.Loger,
 ) error {
 	objMetrics, err := json.Marshal(metric)
 	if err != nil {
 		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
-	url := fmt.Sprintf("http://%s/update/", serverAdderess)
+	url := fmt.Sprintf("http://%s/update/", config.ServerAdderess)
 
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
@@ -123,7 +123,14 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", encod)
 	req.Header.Set("Content-Encoding", encod)
-
+	sig, err := common.Sign(objMetrics, config.SignKey)
+	if err != nil {
+		logger.Warnf("Error sign. err: %s\n", err)
+	} else {
+		if len(sig) > 0 {
+			req.Header.Set("HashSHA256", string(sig))
+		}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Debugf("http.NewRequest.Do err: %s\n", err)
@@ -142,10 +149,10 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	return nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+func reportCounterMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
 	metricsCounter map[string]common.TypeCounter, logger common.Loger) {
 	for _, metric := range dataMetricForReport {
-		err := reportMetricWithRetry(client, serverAdderess, metric, logger)
+		err := reportMetricWithRetry(client, config, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric for counter. err%s\n ", err)
 			continue
@@ -173,27 +180,27 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 			metricsCounterReport := prepareReportCounterMetrics(metricsCounter)
 			if isBatch {
 				metricsForReport = append(metricsForReport, metricsCounterReport...)
-				err := reportAllMetrics(client, config.ServerAdderess, metricsForReport, logger)
+				err := reportAllMetrics(client, config, metricsForReport, logger)
 				if err != nil {
 					logger.Warnf("error for send all metrics. err:%s", err)
 				} else {
 					cleanCounterMetric(metricsCounter)
 				}
 			} else {
-				reportMetrics(client, config.ServerAdderess, metricsForReport, logger)
-				reportCounterMetrics(client, config.ServerAdderess, metricsCounterReport, metricsCounter, logger)
+				reportMetrics(client, config, metricsForReport, logger)
+				reportCounterMetrics(client, config, metricsCounterReport, metricsCounter, logger)
 			}
 		}
 	}
 }
 
-func sendArrayMetric(client *http.Client, serverAdderess string, metrics []common.Metrics, logger common.Loger,
+func sendArrayMetric(client *http.Client, config Config, metrics []common.Metrics, logger common.Loger,
 ) error {
 	objMetrics, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
-	url := fmt.Sprintf("http://%s/updates/", serverAdderess)
+	url := fmt.Sprintf("http://%s/updates/", config.ServerAdderess)
 
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
@@ -214,7 +221,14 @@ func sendArrayMetric(client *http.Client, serverAdderess string, metrics []commo
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", encod)
 	req.Header.Set("Content-Encoding", encod)
-
+	sig, err := common.Sign(objMetrics, config.SignKey)
+	if err != nil {
+		logger.Warnf("error sign. err: %s\n", err)
+	} else {
+		if len(sig) > 0 {
+			req.Header.Set("HashSHA256", string(sig))
+		}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Debugf("http.NewRequest.Do err: %s\n", err)
@@ -228,9 +242,9 @@ func sendArrayMetric(client *http.Client, serverAdderess string, metrics []commo
 	}()
 	return nil
 }
-func reportAllMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+func reportAllMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
 	logger common.Loger) error {
-	err := sendArrayMetric(client, serverAdderess, dataMetricForReport, logger)
+	err := sendArrayMetric(client, config, dataMetricForReport, logger)
 	if err != nil {
 		return fmt.Errorf("error reportAllMetrics. err:%w\n ", err)
 	}

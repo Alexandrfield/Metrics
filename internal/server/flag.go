@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
 func parseFlags(config *Config) error {
@@ -14,6 +16,9 @@ func parseFlags(config *Config) error {
 		"path to file for save metrics [default:localStorage.dat]")
 	flag.StringVar(&config.DatabaseDsn, "d", "",
 		"parametrs for connect Postgress databases [default:-]")
+	var signKey string
+	flag.StringVar(&signKey, "k", "",
+		"key for check sign")
 	flag.IntVar(&config.StoreIntervalSecond, "i", 300,
 		"interval in seconds for save results on disk [default:300]")
 	flag.BoolVar(&config.Restore, "r", true,
@@ -22,6 +27,14 @@ func parseFlags(config *Config) error {
 
 	if envServerAdderess, ok := os.LookupEnv("ADDRESS"); ok {
 		config.ServerAdderess = envServerAdderess
+	}
+	if envSignKey, ok := os.LookupEnv("KEY"); ok {
+		signKey = envSignKey
+	}
+	var err error
+	config.SignKey, err = common.GetKeyFromString(signKey)
+	if err != nil {
+		return fmt.Errorf("try get sign key: %w", err)
 	}
 	if envFileStoregePath, ok := os.LookupEnv("FILE_STORAGE_PATH"); ok {
 		config.FileStoregePath = envFileStoregePath

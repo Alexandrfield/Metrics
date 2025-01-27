@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
 func parseFlags(conf *Config) error {
@@ -14,10 +16,22 @@ func parseFlags(conf *Config) error {
 		"interval in seconds  for sending report to server [default: 10 second]")
 	flag.IntVar(&conf.PollIntervalSecond, "p", 2,
 		"interval in seconds for check metrics [default: 2 second]")
+	var signKey string
+	flag.StringVar(&signKey, "k", "",
+		"key for sign [default: nil]")
 	flag.Parse()
 
 	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
 		conf.ServerAdderess = envServerAdderess
+	}
+
+	if envSignKey := os.Getenv("KEY"); envSignKey != "" {
+		signKey = envSignKey
+	}
+	var err error
+	conf.SignKey, err = common.GetKeyFromString(signKey)
+	if err != nil {
+		return fmt.Errorf("try get sign key: %w", err)
 	}
 
 	if envReportIntervalSecond, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
