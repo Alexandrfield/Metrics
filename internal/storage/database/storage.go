@@ -83,31 +83,17 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 	if err != nil {
 		return fmt.Errorf("can not create transaction. err:%w", err)
 	}
-	_, err = st.getGauge(tx, name)
-	if err != nil {
-		st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
-		query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
-			errRol := tx.Rollback()
-			if errRol != nil {
-				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
-			}
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+
+	st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
+	query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3) ON CONFLICT (ID) UPDATE SET value = EXCLUDED.value "
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
+		errRol := tx.Rollback()
+		if errRol != nil {
+			return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
 		}
-	} else {
-		st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
-		query := "UPDATE metrics SET value = $1 WHERE id = $2"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, tx, query, value, name); err != nil {
-			errRol := tx.Rollback()
-			if errRol != nil {
-				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
-			}
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-		}
+		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -115,6 +101,44 @@ func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) erro
 	}
 	return nil
 }
+
+// func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) error {
+// 	tx, err := st.db.Begin()
+// 	if err != nil {
+// 		return fmt.Errorf("can not create transaction. err:%w", err)
+// 	}
+// 	_, err = st.getGauge(tx, name)
+// 	if err != nil {
+// 		st.Logger.Debugf("gauge metric new nmae:%s; value:%d;", name, value)
+// 		query := "INSERT INTO metrics (id, mtype, value) VALUES ($1, $2, $3)"
+// 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+// 		defer cancel()
+// 		if err := st.exec(ctx, tx, query, name, typegauge, value); err != nil {
+// 			errRol := tx.Rollback()
+// 			if errRol != nil {
+// 				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
+// 			}
+// 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+// 		}
+// 	} else {
+// 		st.Logger.Debugf("gauge metric exist nmae:%s; value:%d; res:%d", name, value)
+// 		query := "UPDATE metrics SET value = $1 WHERE id = $2"
+// 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+// 		defer cancel()
+// 		if err := st.exec(ctx, tx, query, value, name); err != nil {
+// 			errRol := tx.Rollback()
+// 			if errRol != nil {
+// 				return fmt.Errorf("error while trying to save counter metric %s: %w; and error rollback err:%w", name, err, errRol)
+// 			}
+// 			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+// 		}
+// 	}
+// 	err = tx.Commit()
+// 	if err != nil {
+// 		return fmt.Errorf("error with commit transactiom AddGauge. err:%w", err)
+// 	}
+// 	return nil
+// }
 
 func (st *MemDatabaseStorage) getGauge(con databaseDB, name string) (common.TypeGauge, error) {
 	row := con.QueryRowContext(context.Background(),
@@ -142,24 +166,32 @@ func (st *MemDatabaseStorage) AddCounter(name string, value common.TypeCounter) 
 	if err != nil {
 		return fmt.Errorf("can not create transaction AddCounter. err:%w", err)
 	}
-	val, err := st.getCounter(tx, name)
-	if err != nil {
-		st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
-		query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, tx, query, name, typecounter, value); err != nil {
-			return fmt.Errorf("tx, error while trying to save counter metric %s: %w", name, err)
-		}
-	} else {
-		st.Logger.Debugf("counter metric exist nmae:%s; val:%d; value:%d; res:%d", name, val, value, val+value)
-		query := "UPDATE metrics SET delta = $1 WHERE id = $2"
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if err := st.exec(ctx, tx, query, val+value, name); err != nil {
-			return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
-		}
+	st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
+	query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3) ON CONFLICT (ID) UPDATE SET delta = metrics.delta + EXCLUDED.delta"
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := st.exec(ctx, tx, query, name, typecounter, value); err != nil {
+		return fmt.Errorf("tx, error while trying to save counter metric %s: %w", name, err)
 	}
+
+	// val, err := st.getCounter(tx, name)
+	// if err != nil {
+	// 	st.Logger.Debugf("counter metric new nmae:%s; value:%d;", name, value)
+	// 	query := "INSERT INTO metrics (id, mtype, delta) VALUES ($1, $2, $3)"
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// 	defer cancel()
+	// 	if err := st.exec(ctx, tx, query, name, typecounter, value); err != nil {
+	// 		return fmt.Errorf("tx, error while trying to save counter metric %s: %w", name, err)
+	// 	}
+	// } else {
+	// 	st.Logger.Debugf("counter metric exist nmae:%s; val:%d; value:%d; res:%d", name, val, value, val+value)
+	// 	query := "UPDATE metrics SET delta = $1 WHERE id = $2"
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// 	defer cancel()
+	// 	if err := st.exec(ctx, tx, query, val+value, name); err != nil {
+	// 		return fmt.Errorf("error while trying to save counter metric %s: %w", name, err)
+	// 	}
+	// }
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("error with commit transactiom AddCounter. err:%w", err)
