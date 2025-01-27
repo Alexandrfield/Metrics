@@ -18,13 +18,13 @@ func (metr *MetricsMap) Initializate() {
 	metr.metricsCounter = make(map[string]common.TypeCounter)
 }
 func (metr *MetricsMap) UpdateGauge(name string, value common.TypeGauge) {
-	metr.mutexMetricsGauge.Lock()
-	defer metr.mutexMetricsGauge.Unlock()
+	// metr.mutexMetricsGauge.Lock()
+	// defer metr.mutexMetricsGauge.Unlock()
 	metr.metricsGauge[name] = value
 }
 func (metr *MetricsMap) UpdateCounter(name string, value common.TypeCounter) {
-	metr.mutexMetricsCounter.Lock()
-	defer metr.mutexMetricsCounter.Unlock()
+	// metr.mutexMetricsCounter.Lock()
+	// defer metr.mutexMetricsCounter.Unlock()
 	val, ok := metr.metricsCounter[name]
 	if !ok {
 		val = 0
@@ -32,18 +32,18 @@ func (metr *MetricsMap) UpdateCounter(name string, value common.TypeCounter) {
 	metr.metricsCounter[name] = value + val
 }
 func (metr *MetricsMap) GetGauge(name string) common.TypeGauge {
-	metr.mutexMetricsGauge.RLock()
-	defer metr.mutexMetricsGauge.RUnlock()
+	// metr.mutexMetricsGauge.RLock()
+	// defer metr.mutexMetricsGauge.RUnlock()
 	return metr.metricsGauge[name]
 }
 func (metr *MetricsMap) GetCounter(name string) common.TypeCounter {
-	metr.mutexMetricsCounter.RLock()
-	defer metr.mutexMetricsCounter.RUnlock()
+	// metr.mutexMetricsCounter.RLock()
+	// defer metr.mutexMetricsCounter.RUnlock()
 	return metr.metricsCounter[name]
 }
 func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
-	metr.mutexMetricsGauge.RLock()
-	defer metr.mutexMetricsGauge.RUnlock()
+	// metr.mutexMetricsGauge.RLock()
+	// defer metr.mutexMetricsGauge.RUnlock()
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metr.metricsGauge {
 		temp := float64(value)
@@ -53,8 +53,8 @@ func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
 }
 
 func (metr *MetricsMap) PrepareReportCounterMetrics() []common.Metrics {
-	metr.mutexMetricsCounter.RLock()
-	defer metr.mutexMetricsCounter.RUnlock()
+	// metr.mutexMetricsCounter.RLock()
+	// defer metr.mutexMetricsCounter.RUnlock()
 	dataMetricForReport := make([]common.Metrics, 0)
 	for key, value := range metr.metricsCounter {
 		temp := int64(value)
