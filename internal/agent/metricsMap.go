@@ -18,13 +18,13 @@ func (metr *MetricsMap) Initializate() {
 	metr.metricsCounter = make(map[string]common.TypeCounter)
 }
 func (metr *MetricsMap) UpdateGauge(name string, value common.TypeGauge) {
-	mutexMetricsGauge.Lock()
-	defer mutexMetricsGauge.Unlock()
+	metr.mutexMetricsGauge.Lock()
+	defer metr.mutexMetricsGauge.Unlock()
 	metr.metricsGauge[name] = value
 }
 func (metr *MetricsMap) UpdateCounter(name string, value common.TypeCounter) {
-	mutexMetricsCounter.Lock()
-	defer mutexMetricsCounter.Unlock()
+	metr.mutexMetricsCounter.Lock()
+	defer metr.mutexMetricsCounter.Unlock()
 	val, ok := metr.metricsCounter[name]
 	if !ok {
 		val = 0
@@ -32,13 +32,13 @@ func (metr *MetricsMap) UpdateCounter(name string, value common.TypeCounter) {
 	metr.metricsCounter[name] = value + val
 }
 func (metr *MetricsMap) GetGauge(name string) common.TypeGauge {
-	mutexMetricsGauge.RLock()
-	defer mutexMetricsGauge.RUnlock()
+	metr.mutexMetricsGauge.RLock()
+	defer metr.mutexMetricsGauge.RUnlock()
 	return metr.metricsGauge[name]
 }
 func (metr *MetricsMap) GetCounter(name string) common.TypeCounter {
-	mutexMetricsCounter.RLock()
-	defer mutexMetricsCounter.RUnlock()
+	metr.mutexMetricsCounter.RLock()
+	defer metr.mutexMetricsCounter.RUnlock()
 	return metr.metricsCounter[name]
 }
 func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {

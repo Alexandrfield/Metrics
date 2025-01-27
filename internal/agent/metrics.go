@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/shirou/gopsutil/v4/mem"
 )
 
 func updateGaugeMetrics(metrics *MetricsMap) {
@@ -51,9 +50,9 @@ func updateGaugeMetrics(metrics *MetricsMap) {
 	metrics.UpdateGauge("RandomValue", common.TypeGauge(rand.Float64()))
 }
 func SaveAdditionalMetrics(metrics *MetricsMap) {
-	v, _ := mem.VirtualMemory()
-	metrics.UpdateGauge("TotalMemory", common.TypeGauge(v.TotalMemory))
-	metrics.UpdateGauge("FreeMemory", common.TypeGauge(v.FreeMemory))
+	// v, _ := mem.VirtualMemory()
+	metrics.UpdateGauge("TotalMemory", common.TypeGauge(rand.Float64()))
+	metrics.UpdateGauge("FreeMemory", common.TypeGauge(rand.Float64()))
 	metrics.UpdateGauge("CPUutilization1", common.TypeGauge(rand.Float64()))
 }
 func updateCounterMetrics(metrics *MetricsMap) {
@@ -161,8 +160,8 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 		case <-done:
 			return
 		case <-tickerPoolInterval.C:
-			updateGaugeMetrics(metrics)
-			updateCounterMetrics(metrics)
+			updateGaugeMetrics(&metrics)
+			updateCounterMetrics(&metrics)
 		case <-tickerReportInterval.C:
 			metricsForReport := metrics.PrepareReportGaugeMetrics()
 			metricsCounterReport := metrics.PrepareReportCounterMetrics()
@@ -172,11 +171,11 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 				if err != nil {
 					logger.Warnf("error for send all metrics. err:%s", err)
 				} else {
-					//cleanCounterMetric(metricsCounter)
+					cleanCounterMetric(&metrics, metricsCounterReport)
 				}
 			} else {
 				reportMetrics(client, config, metricsForReport, logger)
-				reportCounterMetrics(client, config, metricsCounterReport, metricsCounter, logger)
+				reportCounterMetrics(client, config, metricsCounterReport, &metrics, logger)
 			}
 		}
 	}
@@ -237,8 +236,8 @@ func reportAllMetrics(client *http.Client, config Config, dataMetricForReport []
 	}
 	return nil
 }
-func cleanCounterMetric(metricsCounter map[string]common.TypeCounter) {
-	for key := range metricsCounter {
-		metricsCounter[key] = common.TypeCounter(0)
+func cleanCounterMetric(metr *MetricsMap, metricsCounter []common.Metrics) {
+	for _, metric := range metricsCounter {
+		metr.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
 	}
 }

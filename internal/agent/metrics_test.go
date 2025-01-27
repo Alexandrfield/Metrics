@@ -14,70 +14,63 @@ func TestUpdateGaugeMetrics(t *testing.T) {
 		"HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse", "MSpanSys",
 		"Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
 		"StackSys", "Sys", "TotalAlloc", "RandomValue"}
-	metricsGauge := make(map[string]common.TypeGauge)
+	metrics := MetricsMap{}
+	metrics.Initializate()
 	for _, val := range listMetricsName {
-		metricsGauge[val] = -1
+		metrics.UpdateGauge(val, -1)
 	}
-	updateGaugeMetrics(metricsGauge)
+	updateGaugeMetrics(&metrics)
 	for _, val := range listMetricsName {
-		v, ok := metricsGauge[val]
-		if !ok || v == -1 {
-			t.Errorf("Error key:%s;ok?:%v; value:%v\n", val, ok, v)
+		v := metrics.GetGauge(val)
+		if v == -1 {
+			t.Errorf("Error key:%s; value:%v\n", val, v)
 		}
-		if ok {
-			delete(metricsGauge, val)
-		}
-	}
-	for key, val := range metricsGauge {
-		t.Errorf("Error unexpected key :%s; value:%v;\n", key, val)
 	}
 }
 
 func TestUpdateCounterMetrics(t *testing.T) {
 	var listMetricsName = []string{"PollCount"}
-	metricsCounter := make(map[string]common.TypeCounter)
+	metrics := MetricsMap{}
+	metrics.Initializate()
 	for _, val := range listMetricsName {
-		metricsCounter[val] = -1
+		metrics.UpdateCounter(val, -1)
 	}
-	updateCounterMetrics(metricsCounter)
+	updateCounterMetrics(&metrics)
 	for _, val := range listMetricsName {
-		v, ok := metricsCounter[val]
-		if !ok || v == -1 {
-			t.Errorf("Error key:%s;ok?:%v; value:%v\n", val, ok, v)
+		v := metrics.GetCounter(val)
+		if v == -1 {
+			t.Errorf("Error key:%s; value:%v\n", val, v)
 		}
-		if ok {
-			delete(metricsCounter, val)
-		}
-	}
-	for key, val := range metricsCounter {
-		t.Errorf("Error unexpected key :%s; value:%v;\n", key, val)
 	}
 }
 
 func TestPrepareReportGaugeMetrics(t *testing.T) {
-	metricsGauge := make(map[string]common.TypeGauge)
-	metricsGauge["Alloc"] = 9.1
-	metricsGauge["GCCPUFraction"] = 10.43
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	listIds := []string{"Alloc", "GCCPUFraction"}
 
 	expected := make([]common.Metrics, 0)
-	for key, value := range metricsGauge {
-		temp := float64(value)
-		expected = append(expected, common.Metrics{ID: key, MType: "gauge", Value: &temp})
+	for _, value := range listIds {
+		temp := 9.1
+		expected = append(expected, common.Metrics{ID: value, MType: "gauge", Value: &temp})
+		metrics.UpdateGauge(value, common.TypeGauge(temp))
 	}
-	actual := prepareReportGaugeMetrics(metricsGauge)
+	actual := metrics.PrepareReportGaugeMetrics()
 	assert.ElementsMatch(t, actual, expected)
 }
 
 func TestPrepareReportCounterMetrics(t *testing.T) {
-	metricsGauge := make(map[string]common.TypeCounter)
-	metricsGauge["AllocCounter"] = 8
-	metricsGauge["GCCPUFractionCounter"] = 10
+
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	listIds := []string{"AllocCounter", "GCCPUFractionCounter"}
 
 	expected := make([]common.Metrics, 0)
-	for key, value := range metricsGauge {
-		temp := int64(value)
-		expected = append(expected, common.Metrics{ID: key, MType: "counter", Delta: &temp})
+	for _, value := range listIds {
+		temp := int64(10)
+		expected = append(expected, common.Metrics{ID: value, MType: "counter", Delta: &temp})
+		metrics.UpdateCounter(value, common.TypeCounter(temp))
 	}
-	actual := prepareReportCounterMetrics(metricsGauge)
+	actual := metrics.PrepareReportCounterMetrics()
 	assert.ElementsMatch(t, actual, expected)
 }
