@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
+	"github.com/shirou/gopsutil/mem"
 )
 
 func updateGaugeMetrics(metrics *MetricsMap) {
@@ -49,11 +50,11 @@ func updateGaugeMetrics(metrics *MetricsMap) {
 	metrics.UpdateGauge("TotalAlloc", common.TypeGauge(rtm.TotalAlloc))
 	metrics.UpdateGauge("RandomValue", common.TypeGauge(rand.Float64()))
 }
-func SaveAdditionalMetrics(metrics *MetricsMap) {
-	// v, _ := mem.VirtualMemory()
-	metrics.UpdateGauge("TotalMemory", common.TypeGauge(rand.Float64()))
-	metrics.UpdateGauge("FreeMemory", common.TypeGauge(rand.Float64()))
-	metrics.UpdateGauge("CPUutilization1", common.TypeGauge(rand.Float64()))
+func updateAdditionalMetrics(metrics *MetricsMap) {
+	v, _ := mem.VirtualMemory()
+	metrics.UpdateGauge("TotalMemory", common.TypeGauge(v.Total))
+	metrics.UpdateGauge("FreeMemory", common.TypeGauge(v.Free))
+	metrics.UpdateGauge("CPUutilization1", common.TypeGauge(v.UsedPercent))
 }
 func updateCounterMetrics(metrics *MetricsMap) {
 	metrics.UpdateCounter("PollCount", common.TypeCounter(1))
@@ -61,10 +62,12 @@ func updateCounterMetrics(metrics *MetricsMap) {
 
 func reportMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
-	for _, metric := range dataMetricForReport {
+	for i, metric := range dataMetricForReport {
 		err := reportMetricWithRetry(client, config, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
+			dataMetricForReport[i].Delta = nil
+			dataMetricForReport[i].Value = nil
 		}
 	}
 }
@@ -137,15 +140,26 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 	return nil
 }
 
-func reportCounterMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
-	metrics *MetricsMap, logger common.Loger) {
-	for _, metric := range dataMetricForReport {
-		err := reportMetricWithRetry(client, config, metric, logger)
-		if err != nil {
-			logger.Warnf("error report metric for counter. err%s\n ", err)
-			continue
-		} else {
-			metrics.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
+func AdditionalMetricsWatcher(config Config, metrics *MetricsMap, done chan struct{}) {
+	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
+	for {
+		select {
+		case <-done:
+			return
+		case <-tickerPoolInterval.C:
+			updateAdditionalMetrics(metrics)
+		}
+	}
+}
+
+func workerSendData(config Config, client *http.Client, metrics *MetricsMap, logger common.Loger, input <-chan []common.Metrics, done chan struct{}) {
+	for {
+		select {
+		case <-done:
+			return
+		case inputData := <-input:
+			reportMetrics(client, config, inputData, logger)
+			fixSusceeseSavedCounterMetric(metrics, inputData)
 		}
 	}
 }
@@ -155,6 +169,11 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
 	metrics := MetricsMap{}
 	metrics.Initializate()
+	go AdditionalMetricsWatcher(config, &metrics, done)
+	workerData := make(chan []common.Metrics)
+	for i := 0; i < config.RateLimit; i++ {
+		go workerSendData(config, client, &metrics, logger, workerData, done)
+	}
 	for {
 		select {
 		case <-done:
@@ -165,17 +184,16 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 		case <-tickerReportInterval.C:
 			metricsForReport := metrics.PrepareReportGaugeMetrics()
 			metricsCounterReport := metrics.PrepareReportCounterMetrics()
+			metricsForReport = append(metricsForReport, metricsCounterReport...)
 			if isBatch {
-				metricsForReport = append(metricsForReport, metricsCounterReport...)
 				err := reportAllMetrics(client, config, metricsForReport, logger)
 				if err != nil {
 					logger.Warnf("error for send all metrics. err:%s", err)
 				} else {
-					cleanCounterMetric(&metrics, metricsCounterReport)
+					fixSusceeseSavedCounterMetric(&metrics, metricsForReport)
 				}
 			} else {
-				reportMetrics(client, config, metricsForReport, logger)
-				reportCounterMetrics(client, config, metricsCounterReport, &metrics, logger)
+				workerData <- metricsForReport
 			}
 		}
 	}
@@ -236,8 +254,10 @@ func reportAllMetrics(client *http.Client, config Config, dataMetricForReport []
 	}
 	return nil
 }
-func cleanCounterMetric(metr *MetricsMap, metricsCounter []common.Metrics) {
+func fixSusceeseSavedCounterMetric(metr *MetricsMap, metricsCounter []common.Metrics) {
 	for _, metric := range metricsCounter {
-		metr.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
+		if metric.Delta != nil {
+			metr.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
+		}
 	}
 }
