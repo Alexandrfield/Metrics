@@ -152,7 +152,8 @@ func AdditionalMetricsWatcher(config Config, metrics *MetricsMap, done chan stru
 	}
 }
 
-func workerSendData(config Config, client *http.Client, metrics *MetricsMap, logger common.Loger, input <-chan []common.Metrics, done chan struct{}) {
+func workerSendData(config Config, client *http.Client, metrics *MetricsMap, logger common.Loger,
+	input <-chan []common.Metrics, done chan struct{}) {
 	for {
 		select {
 		case <-done:
@@ -171,7 +172,7 @@ func MetricsWatcher(config Config, client *http.Client, logger common.Loger, don
 	metrics.Initializate()
 	go AdditionalMetricsWatcher(config, &metrics, done)
 	workerData := make(chan []common.Metrics)
-	for i := 0; i < config.RateLimit; i++ {
+	for range config.RateLimit {
 		go workerSendData(config, client, &metrics, logger, workerData, done)
 	}
 	for {

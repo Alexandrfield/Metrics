@@ -58,9 +58,7 @@ func TestPrepareReportGaugeMetrics(t *testing.T) {
 	actual := metrics.PrepareReportGaugeMetrics()
 	assert.ElementsMatch(t, actual, expected)
 }
-
 func TestPrepareReportCounterMetrics(t *testing.T) {
-
 	metrics := MetricsMap{}
 	metrics.Initializate()
 	listIds := []string{"AllocCounter", "GCCPUFractionCounter"}
