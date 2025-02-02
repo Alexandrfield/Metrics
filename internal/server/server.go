@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"compress/gzip"
+	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -122,12 +124,13 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
+func WithLogging(logger common.Loger, config Config, h http.HandlerFunc) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		uri := r.RequestURI
 		method := r.Method
+
 		responseData := &responseData{
 			status: 0,
 			size:   0,
@@ -156,6 +159,18 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 				responseData:   responseData,
 			}
 		}
+		data := make([]byte, 10000)
+		n, _ := r.Body.Read(data)
+		data = data[:n]
+		msgSign := r.Header.Get("HashSHA256")
+		if msgSign != "" && len(data) > 0 {
+			sig, _ := b64.StdEncoding.DecodeString(msgSign)
+			if !common.CheckHash(data, sig, config.SignKey) {
+				lw.WriteHeader(http.StatusBadRequest)
+			}
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(data))
+
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",

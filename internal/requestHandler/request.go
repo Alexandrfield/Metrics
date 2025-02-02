@@ -106,14 +106,14 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 	data := make([]byte, 10000)
 	n, _ := req.Body.Read(data)
 	data = data[:n]
-	msgSign := req.Header.Get("HashSHA256")
-	if msgSign != "" && len(data) > 0 {
-		sig, _ := b64.StdEncoding.DecodeString(msgSign)
-		if !common.CheckHash(data, sig, rep.signKey) {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
+	// msgSign := req.Header.Get("HashSHA256")
+	// if msgSign != "" && len(data) > 0 {
+	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
+	// 	if !common.CheckHash(data, sig, rep.signKey) {
+	// 		res.WriteHeader(http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
 	rep.logger.Debugf("UpdateJSONValue data body:%v", data)
 	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -152,14 +152,14 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	data := make([]byte, 10000)
 	n, _ := req.Body.Read(data)
 	data = data[:n]
-	msgSign := req.Header.Get("HashSHA256")
-	if msgSign != "" && len(data) > 0 {
-		sig, _ := b64.StdEncoding.DecodeString(msgSign)
-		if !common.CheckHash(data, sig, rep.signKey) {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
+	// msgSign := req.Header.Get("HashSHA256")
+	// if msgSign != "" && len(data) > 0 {
+	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
+	// 	if !common.CheckHash(data, sig, rep.signKey) {
+	// 		res.WriteHeader(http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
 	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus == http.StatusOK {
 		rep.logger.Debugf("update value metric:%s; delta:%s", metric, metric.Delta)
@@ -206,14 +206,14 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	data := make([]byte, 10000)
 	n, _ := req.Body.Read(data)
 	data = data[:n]
-	msgSign := req.Header.Get("HashSHA256")
-	if msgSign != "" && len(data) > 0 {
-		sig, _ := b64.StdEncoding.DecodeString(msgSign)
-		if !common.CheckHash(data, sig, rep.signKey) {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
+	// msgSign := req.Header.Get("HashSHA256")
+	// if msgSign != "" && len(data) > 0 {
+	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
+	// 	if !common.CheckHash(data, sig, rep.signKey) {
+	// 		res.WriteHeader(http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
 	rep.logger.Debugf("GetJSONValue body:%v", data)
 	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
@@ -246,14 +246,14 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	data := make([]byte, 10000)
 	n, _ := req.Body.Read(data)
 	data = data[:n]
-	msgSign := req.Header.Get("HashSHA256")
-	if msgSign != "" && len(data) > 0 {
-		sig, _ := b64.StdEncoding.DecodeString(msgSign)
-		if !common.CheckHash(data, sig, rep.signKey) {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-	}
+	// msgSign := req.Header.Get("HashSHA256")
+	// if msgSign != "" && len(data) > 0 {
+	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
+	// 	if !common.CheckHash(data, sig, rep.signKey) {
+	// 		res.WriteHeader(http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
 	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus != http.StatusOK {
 		res.WriteHeader(retStatus)
