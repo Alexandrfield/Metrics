@@ -1,7 +1,7 @@
 package requesthandler
 
 import (
-	"encoding/hex"
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -108,7 +108,7 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 	data = data[:n]
 	msgSign := req.Header.Get("HashSHA256")
 	if msgSign != "" && len(data) > 0 {
-		sig, _ := hex.DecodeString(msgSign)
+		sig, _ := b64.StdEncoding.DecodeString(msgSign)
 		if !common.CheckHash(data, sig, rep.signKey) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -154,7 +154,7 @@ func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request)
 	data = data[:n]
 	msgSign := req.Header.Get("HashSHA256")
 	if msgSign != "" && len(data) > 0 {
-		sig, _ := hex.DecodeString(msgSign)
+		sig, _ := b64.StdEncoding.DecodeString(msgSign)
 		if !common.CheckHash(data, sig, rep.signKey) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -208,7 +208,7 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	data = data[:n]
 	msgSign := req.Header.Get("HashSHA256")
 	if msgSign != "" && len(data) > 0 {
-		sig, _ := hex.DecodeString(msgSign)
+		sig, _ := b64.StdEncoding.DecodeString(msgSign)
 		if !common.CheckHash(data, sig, rep.signKey) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -234,7 +234,7 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	if err != nil {
 		rep.logger.Warnf("Error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
-		req.Header.Set("HashSHA256", hex.EncodeToString(sig))
+		req.Header.Set("HashSHA256", b64.StdEncoding.EncodeToString(sig))
 	}
 	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
@@ -248,7 +248,7 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	data = data[:n]
 	msgSign := req.Header.Get("HashSHA256")
 	if msgSign != "" && len(data) > 0 {
-		sig, _ := hex.DecodeString(msgSign)
+		sig, _ := b64.StdEncoding.DecodeString(msgSign)
 		if !common.CheckHash(data, sig, rep.signKey) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -267,7 +267,7 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		rep.logger.Warnf("Error sign. err: %s\n", err)
 	} else if len(sig) > 0 {
-		req.Header.Set("HashSHA256", hex.EncodeToString(sig))
+		req.Header.Set("HashSHA256", b64.StdEncoding.EncodeToString(sig))
 	}
 
 	_, err = res.Write(resp)
