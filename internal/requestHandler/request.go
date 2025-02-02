@@ -149,9 +149,9 @@ func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Reque
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	rep.logger.Debugf("UpdateValue")
-	data := make([]byte, 10000)
-	n, _ := req.Body.Read(data)
-	data = data[:n]
+	// data := make([]byte, 10000)
+	// n, _ := req.Body.Read(data)
+	// data = data[:n]
 	// msgSign := req.Header.Get("HashSHA256")
 	// if msgSign != "" && len(data) > 0 {
 	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
@@ -243,9 +243,9 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	data := make([]byte, 10000)
-	n, _ := req.Body.Read(data)
-	data = data[:n]
+	// data := make([]byte, 10000)
+	// n, _ := req.Body.Read(data)
+	// data = data[:n]
 	// msgSign := req.Header.Get("HashSHA256")
 	// if msgSign != "" && len(data) > 0 {
 	// 	sig, _ := b64.StdEncoding.DecodeString(msgSign)
