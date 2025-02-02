@@ -55,15 +55,15 @@ func main() {
 	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 	router := chi.NewRouter()
-	router.Get(`/value/*`, server.WithLogging(logger, config, servHandler.GetValue))
-	router.Post(`/value/`, server.WithLogging(logger, config, servHandler.GetJSONValue))
-	router.Get(`/`, server.WithLogging(logger, config, servHandler.GetAllData))
+	router.Get(`/value/*`, server.WithLogging(logger, &config, servHandler.GetValue))
+	router.Post(`/value/`, server.WithLogging(logger, &config, servHandler.GetJSONValue))
+	router.Get(`/`, server.WithLogging(logger, &config, servHandler.GetAllData))
 
-	router.Get(`/ping`, server.WithLogging(logger, config, servHandler.Ping))
+	router.Get(`/ping`, server.WithLogging(logger, &config, servHandler.Ping))
 
-	router.Post(`/update/*`, server.WithLogging(logger, config, servHandler.UpdateValue))
-	router.Post(`/update/`, server.WithLogging(logger, config, servHandler.UpdateJSONValue))
-	router.Post(`/updates/`, server.WithLogging(logger, config, servHandler.UpdatesMetrics))
+	router.Post(`/update/*`, server.WithLogging(logger, &config, servHandler.UpdateValue))
+	router.Post(`/update/`, server.WithLogging(logger, &config, servHandler.UpdateJSONValue))
+	router.Post(`/updates/`, server.WithLogging(logger, &config, servHandler.UpdatesMetrics))
 
 	logger.Info("Server started")
 	go func() {
