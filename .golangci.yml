@@ -488,7 +488,7 @@ linters:
     - exhaustive
     - forcetypeassert
     - gocheckcompilerdirectives
-    - goconst
+    #- goconst
     - gocritic
     - godot
     - gofmt

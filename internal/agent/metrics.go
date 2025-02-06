@@ -3,88 +3,99 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/Alexandrfield/Metrics/internal/storage"
+	"github.com/shirou/gopsutil/mem"
 )
 
-func updateGaugeMetrics(metrics map[string]storage.TypeGauge) {
+func updateGaugeMetrics(metrics *MetricsMap) {
 	var rtm runtime.MemStats
 	runtime.ReadMemStats(&rtm)
-	metrics["Alloc"] = storage.TypeGauge(rtm.Alloc)
-	metrics["BuckHashSys"] = storage.TypeGauge(rtm.BuckHashSys)
-	metrics["Frees"] = storage.TypeGauge(rtm.Frees)
-	metrics["GCCPUFraction"] = storage.TypeGauge(rtm.GCCPUFraction)
-	metrics["GCSys"] = storage.TypeGauge(rtm.GCSys)
-	metrics["HeapAlloc"] = storage.TypeGauge(rtm.HeapAlloc)
-	metrics["HeapIdle"] = storage.TypeGauge(rtm.HeapIdle)
-	metrics["HeapInuse"] = storage.TypeGauge(rtm.HeapInuse)
-	metrics["HeapObjects"] = storage.TypeGauge(rtm.HeapObjects)
-	metrics["HeapReleased"] = storage.TypeGauge(rtm.HeapReleased)
-	metrics["HeapSys"] = storage.TypeGauge(rtm.HeapSys)
-	metrics["LastGC"] = storage.TypeGauge(rtm.LastGC)
-	metrics["Lookups"] = storage.TypeGauge(rtm.Lookups)
-	metrics["MCacheInuse"] = storage.TypeGauge(rtm.MCacheInuse)
-	metrics["MCacheSys"] = storage.TypeGauge(rtm.MCacheSys)
-	metrics["MSpanInuse"] = storage.TypeGauge(rtm.MSpanInuse)
-	metrics["MSpanSys"] = storage.TypeGauge(rtm.MSpanSys)
-	metrics["Mallocs"] = storage.TypeGauge(rtm.Mallocs)
-	metrics["NextGC"] = storage.TypeGauge(rtm.NextGC)
-	metrics["NumForcedGC"] = storage.TypeGauge(rtm.NumForcedGC)
-	metrics["NumGC"] = storage.TypeGauge(rtm.NumGC)
-	metrics["OtherSys"] = storage.TypeGauge(rtm.OtherSys)
-	metrics["PauseTotalNs"] = storage.TypeGauge(rtm.PauseTotalNs)
-	metrics["StackInuse"] = storage.TypeGauge(rtm.StackInuse)
-	metrics["StackSys"] = storage.TypeGauge(rtm.StackSys)
-	metrics["Sys"] = storage.TypeGauge(rtm.Sys)
-	metrics["TotalAlloc"] = storage.TypeGauge(rtm.TotalAlloc)
-	metrics["RandomValue"] = storage.TypeGauge(rand.Float64())
+	metrics.UpdateGauge("Alloc", common.TypeGauge(rtm.Alloc))
+	metrics.UpdateGauge("BuckHashSys", common.TypeGauge(rtm.BuckHashSys))
+	metrics.UpdateGauge("Frees", common.TypeGauge(rtm.Frees))
+	metrics.UpdateGauge("GCCPUFraction", common.TypeGauge(rtm.GCCPUFraction))
+	metrics.UpdateGauge("GCSys", common.TypeGauge(rtm.GCSys))
+	metrics.UpdateGauge("HeapAlloc", common.TypeGauge(rtm.HeapAlloc))
+	metrics.UpdateGauge("HeapIdle", common.TypeGauge(rtm.HeapIdle))
+	metrics.UpdateGauge("HeapInuse", common.TypeGauge(rtm.HeapInuse))
+	metrics.UpdateGauge("HeapObjects", common.TypeGauge(rtm.HeapObjects))
+	metrics.UpdateGauge("HeapReleased", common.TypeGauge(rtm.HeapReleased))
+	metrics.UpdateGauge("HeapSys", common.TypeGauge(rtm.HeapSys))
+	metrics.UpdateGauge("LastGC", common.TypeGauge(rtm.LastGC))
+	metrics.UpdateGauge("Lookups", common.TypeGauge(rtm.Lookups))
+	metrics.UpdateGauge("MCacheInuse", common.TypeGauge(rtm.MCacheInuse))
+	metrics.UpdateGauge("MCacheSys", common.TypeGauge(rtm.MCacheSys))
+	metrics.UpdateGauge("MSpanInuse", common.TypeGauge(rtm.MSpanInuse))
+	metrics.UpdateGauge("MSpanSys", common.TypeGauge(rtm.MSpanSys))
+	metrics.UpdateGauge("Mallocs", common.TypeGauge(rtm.Mallocs))
+	metrics.UpdateGauge("NextGC", common.TypeGauge(rtm.NextGC))
+	metrics.UpdateGauge("NumForcedGC", common.TypeGauge(rtm.NumForcedGC))
+	metrics.UpdateGauge("NumGC", common.TypeGauge(rtm.NumGC))
+	metrics.UpdateGauge("OtherSys", common.TypeGauge(rtm.OtherSys))
+	metrics.UpdateGauge("PauseTotalNs", common.TypeGauge(rtm.PauseTotalNs))
+	metrics.UpdateGauge("StackInuse", common.TypeGauge(rtm.StackInuse))
+	metrics.UpdateGauge("StackSys", common.TypeGauge(rtm.StackSys))
+	metrics.UpdateGauge("Sys", common.TypeGauge(rtm.Sys))
+	metrics.UpdateGauge("TotalAlloc", common.TypeGauge(rtm.TotalAlloc))
+	metrics.UpdateGauge("RandomValue", common.TypeGauge(rand.Float64()))
 }
-func updateCounterMetrics(metrics map[string]storage.TypeCounter) {
-	metrics["PollCount"]++
+func updateAdditionalMetrics(metrics *MetricsMap) {
+	v, _ := mem.VirtualMemory()
+	metrics.UpdateGauge("TotalMemory", common.TypeGauge(v.Total))
+	metrics.UpdateGauge("FreeMemory", common.TypeGauge(v.Free))
+	metrics.UpdateGauge("CPUutilization1", common.TypeGauge(v.UsedPercent))
 }
-func prepareReportGaugeMetrics(metricsGauge map[string]storage.TypeGauge) []common.Metrics {
-	dataMetricForReport := make([]common.Metrics, 0)
-	for key, value := range metricsGauge {
-		temp := float64(value)
-		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "gauge", Value: &temp})
-	}
-	return dataMetricForReport
+func updateCounterMetrics(metrics *MetricsMap) {
+	metrics.UpdateCounter("PollCount", common.TypeCounter(1))
 }
 
-func prepareReportCounterMetrics(metricsCounter map[string]storage.TypeCounter) []common.Metrics {
-	dataMetricForReport := make([]common.Metrics, 0)
-	for key, value := range metricsCounter {
-		temp := int64(value)
-		dataMetricForReport = append(dataMetricForReport, common.Metrics{ID: key, MType: "counter", Delta: &temp})
-	}
-	return dataMetricForReport
-}
-
-func reportMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
+func reportMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
 	logger common.Loger) {
-	for _, metric := range dataMetricForReport {
-		err := reportMetric(client, serverAdderess, metric, logger)
+	for i, metric := range dataMetricForReport {
+		err := reportMetricWithRetry(client, config, metric, logger)
 		if err != nil {
 			logger.Warnf("error report metric. err%s\n ", err)
+			dataMetricForReport[i].Delta = nil
+			dataMetricForReport[i].Value = nil
 		}
 	}
 }
 
-func reportMetric(client *http.Client, serverAdderess string, metric common.Metrics, logger common.Loger,
+func reportMetricWithRetry(client *http.Client, config Config, metric common.Metrics,
+	logger common.Loger) error {
+	secondWaitRetry := []int{0, 1, 3, 5}
+	var err error
+	for _, val := range secondWaitRetry {
+		time.Sleep(time.Duration(val) * time.Second)
+		err = reportMetric(client, config, metric, logger)
+		if !errors.Is(err, syscall.ECONNREFUSED) {
+			if err != nil {
+				logger.Warnf("error report metric. err%s\n ", err)
+			}
+			break
+		}
+	}
+	return err
+}
+
+func reportMetric(client *http.Client, config Config, metric common.Metrics, logger common.Loger,
 ) error {
 	objMetrics, err := json.Marshal(metric)
 	if err != nil {
 		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
 	}
-	url := fmt.Sprintf("http://%s/update/", serverAdderess)
+	url := fmt.Sprintf("http://%s/update/", config.ServerAdderess)
 
 	var buf bytes.Buffer
 	g := gzip.NewWriter(&buf)
@@ -101,10 +112,16 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	if err != nil {
 		logger.Warnf("http.NewRequest. err: %s\n", err)
 	}
+	const encod = "gzip"
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip")
-	req.Header.Set("Content-Encoding", "gzip")
-
+	req.Header.Set("Accept-Encoding", encod)
+	req.Header.Set("Content-Encoding", encod)
+	sig, err := common.Sign(objMetrics, config.SignKey)
+	if err != nil {
+		logger.Warnf("Error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		req.Header.Add("HashSHA256", b64.StdEncoding.EncodeToString(sig))
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.Debugf("http.NewRequest.Do err: %s\n", err)
@@ -123,36 +140,125 @@ func reportMetric(client *http.Client, serverAdderess string, metric common.Metr
 	return nil
 }
 
-func reportCounterMetrics(client *http.Client, serverAdderess string, dataMetricForReport []common.Metrics,
-	metricsCounter map[string]storage.TypeCounter, logger common.Loger) {
-	for _, metric := range dataMetricForReport {
-		err := reportMetric(client, serverAdderess, metric, logger)
-		if err != nil {
-			logger.Warnf("error report metric for counter. err%s\n ", err)
-			continue
-		} else {
-			metricsCounter[metric.ID] -= storage.TypeCounter(*metric.Delta)
-		}
-	}
-}
-func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
+func AdditionalMetricsWatcher(config Config, metrics *MetricsMap, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
-	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
-	metricsGauge := make(map[string]storage.TypeGauge)
-	metricsCounter := make(map[string]storage.TypeCounter)
-	metricsCounter["PollCount"] = 0
 	for {
 		select {
 		case <-done:
 			return
 		case <-tickerPoolInterval.C:
-			updateGaugeMetrics(metricsGauge)
-			updateCounterMetrics(metricsCounter)
+			updateAdditionalMetrics(metrics)
+		}
+	}
+}
+
+func workerSendData(config Config, client *http.Client, metrics *MetricsMap, logger common.Loger,
+	input <-chan []common.Metrics, done chan struct{}) {
+	for {
+		select {
+		case <-done:
+			return
+		case inputData := <-input:
+			reportMetrics(client, config, inputData, logger)
+			fixSusceeseSavedCounterMetric(metrics, inputData)
+		}
+	}
+}
+func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
+	var isBatch = true
+	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
+	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	go AdditionalMetricsWatcher(config, &metrics, done)
+	workerData := make(chan []common.Metrics)
+	for range config.RateLimit {
+		go workerSendData(config, client, &metrics, logger, workerData, done)
+	}
+	for {
+		select {
+		case <-done:
+			return
+		case <-tickerPoolInterval.C:
+			updateGaugeMetrics(&metrics)
+			updateCounterMetrics(&metrics)
 		case <-tickerReportInterval.C:
-			metricsGaugeReport := prepareReportGaugeMetrics(metricsGauge)
-			metricsCounterReport := prepareReportCounterMetrics(metricsCounter)
-			reportMetrics(client, config.ServerAdderess, metricsGaugeReport, logger)
-			reportCounterMetrics(client, config.ServerAdderess, metricsCounterReport, metricsCounter, logger)
+			metricsForReport := metrics.PrepareReportGaugeMetrics()
+			metricsCounterReport := metrics.PrepareReportCounterMetrics()
+			metricsForReport = append(metricsForReport, metricsCounterReport...)
+			if isBatch {
+				err := reportAllMetrics(client, config, metricsForReport, logger)
+				if err != nil {
+					logger.Warnf("error for send all metrics. err:%s", err)
+				} else {
+					fixSusceeseSavedCounterMetric(&metrics, metricsForReport)
+				}
+			} else {
+				workerData <- metricsForReport
+			}
+		}
+	}
+}
+
+func sendArrayMetric(client *http.Client, config Config, metrics []common.Metrics, logger common.Loger,
+) error {
+	objMetrics, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("problem with marshal JSON file. err:%w", err)
+	}
+	url := fmt.Sprintf("http://%s/updates/", config.ServerAdderess)
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(objMetrics); err != nil {
+		return fmt.Errorf("problem with compress. err:%w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("problem with  close compress writer. err:%w", err)
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost, url, bytes.NewBuffer(objMetrics),
+	)
+	if err != nil {
+		logger.Warnf("http.NewRequest. err: %s\n", err)
+	}
+	const encod = "gzip"
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", encod)
+	req.Header.Set("Content-Encoding", encod)
+	sig, err := common.Sign(objMetrics, config.SignKey)
+	if err != nil {
+		logger.Warnf("error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		logger.Debugf("try set HashSHA256 sign: %s", b64.StdEncoding.EncodeToString(sig))
+		req.Header.Set("HashSHA256", b64.StdEncoding.EncodeToString(sig))
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Debugf("http.NewRequest.Do err: %s\n", err)
+		return fmt.Errorf("http.NewRequest.Do err:%w", err)
+	}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			logger.Warnf("resp.Body.Close() err: %s\n", err)
+		}
+	}()
+	return nil
+}
+func reportAllMetrics(client *http.Client, config Config, dataMetricForReport []common.Metrics,
+	logger common.Loger) error {
+	err := sendArrayMetric(client, config, dataMetricForReport, logger)
+	if err != nil {
+		return fmt.Errorf("error reportAllMetrics. err:%w\n ", err)
+	}
+	return nil
+}
+func fixSusceeseSavedCounterMetric(metr *MetricsMap, metricsCounter []common.Metrics) {
+	for _, metric := range metricsCounter {
+		if metric.Delta != nil {
+			metr.UpdateCounter(metric.ID, (-1)*common.TypeCounter(*metric.Delta))
 		}
 	}
 }

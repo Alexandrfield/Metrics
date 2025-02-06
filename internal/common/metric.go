@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -40,6 +41,7 @@ func (met *Metrics) GetValueMetric() string {
 		res = strconv.Itoa(int(*met.Delta))
 	case "gauge":
 		res = strconv.FormatFloat(float64(*met.Value), 'f', -1, 64)
+		log.Printf("ID:%s; gauge GetValueMetric() res:%s\n", met.ID, res)
 	}
 	return res
 }

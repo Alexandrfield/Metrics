@@ -43,9 +43,10 @@ func main() {
 		time.Sleep(1 * time.Second)
 		logger.Info("Server stoped")
 	}()
-	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s", config.ServerAdderess, config.FileStoregePath)
+	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:",
+		config.ServerAdderess, config.FileStoregePath)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
-		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore}
+		StoreIntervalSecond: config.StoreIntervalSecond, Restore: config.Restore, DatabaseDsn: config.DatabaseDsn}
 	stor := storage.CreateMemStorage(storageConfig, logger, done)
 	if stor == nil {
 		logger.Fatal("Can not create MemStorage. err:%s", err)
@@ -54,12 +55,15 @@ func main() {
 	servHandler := handler.CreateHandlerRepository(&metricRep, logger)
 
 	router := chi.NewRouter()
-	router.Get(`/value/*`, server.WithLogging(logger, servHandler.GetValue))
-	router.Post(`/value/`, server.WithLogging(logger, servHandler.GetJSONValue))
-	router.Get(`/`, server.WithLogging(logger, servHandler.GetAllData))
+	router.Get(`/value/*`, server.WithLogging(logger, &config, servHandler.GetValue))
+	router.Post(`/value/`, server.WithLogging(logger, &config, servHandler.GetJSONValue))
+	router.Get(`/`, server.WithLogging(logger, &config, servHandler.GetAllData))
 
-	router.Post(`/update/*`, server.WithLogging(logger, servHandler.UpdateValue))
-	router.Post(`/update/`, server.WithLogging(logger, servHandler.UpdateJSONValue))
+	router.Get(`/ping`, server.WithLogging(logger, &config, servHandler.Ping))
+
+	router.Post(`/update/*`, server.WithLogging(logger, &config, servHandler.UpdateValue))
+	router.Post(`/update/`, server.WithLogging(logger, &config, servHandler.UpdateJSONValue))
+	router.Post(`/updates/`, server.WithLogging(logger, &config, servHandler.UpdatesMetrics))
 
 	logger.Info("Server started")
 	go func() {

@@ -1,37 +1,42 @@
 package requesthandler
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
 type MetricsStorage interface {
-	SetCounterValue(metricName string, metricValue storage.TypeCounter) error
-	SetGaugeValue(metricName string, metricValue storage.TypeGauge) error
-	GetCounterValue(metricName string) (storage.TypeCounter, error)
-	GetGaugeValue(metricName string) (storage.TypeGauge, error)
+	SetCounterValue(metricName string, metricValue common.TypeCounter) error
+	SetGaugeValue(metricName string, metricValue common.TypeGauge) error
+	GetCounterValue(metricName string) (common.TypeCounter, error)
+	GetGaugeValue(metricName string) (common.TypeGauge, error)
 	GetAllValue() ([]string, error)
+	PingDatabase() bool
+	AddMetrics(metrics []common.Metrics) error
 }
 
 type MetricServer struct {
 	logger     common.Loger
 	memStorage MetricsStorage
+	signKey    []byte
 }
 
-func parseURL(req *http.Request, logger common.Loger) (common.Metrics, int) {
+func parseURL(data string, logger common.Loger) (common.Metrics, int) {
 	var metric common.Metrics
-	url := strings.Split(req.URL.String(), "/")
+	url := strings.Split(data, "/")
 	// expected format http://<АДРЕС_СЕРВЕРА>/update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>,
 	// Content-Type: text/plain
 	if url[1] == "update" {
 		if len(url) != 5 {
 			return metric, http.StatusNotFound
 		}
+		logger.Debugf("--->%s;%s;%s", url[2], url[3], url[4])
 		err := metric.SaveMetric(url[2], url[3], url[4])
 		if err != nil {
 			logger.Debugf("issue with parse metric (command update): %w", err)
@@ -60,44 +65,93 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
-func (rep *MetricServer) updateValue(metric *common.Metrics) int {
-	retStatus := http.StatusOK
+func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
+	rep.logger.Debugf("pingDatabase. req:%v;", req)
+	if rep.memStorage.PingDatabase() {
+		res.WriteHeader(http.StatusOK)
+	} else {
+		res.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (rep *MetricServer) updateValue(metric *common.Metrics) error {
 	rep.logger.Debugf("setValue type:%s; name: %s; value:%d; delta:%d;",
 		metric.MType, metric.ID, metric.Value, metric.Delta)
 	var err error
 	switch metric.MType {
 	case "gauge":
-		err = rep.memStorage.SetGaugeValue(metric.ID, storage.TypeGauge(*metric.Value))
+		err = rep.memStorage.SetGaugeValue(metric.ID, common.TypeGauge(*metric.Value))
 	case "counter":
-		err = rep.memStorage.SetCounterValue(metric.ID, storage.TypeCounter(*metric.Delta))
+		rep.logger.Debugf("setValue >> counter name: %s;  delta:%d;", metric.ID, common.TypeCounter(*metric.Delta))
+		err = rep.memStorage.SetCounterValue(metric.ID, common.TypeCounter(*metric.Delta))
 	default:
-		retStatus = http.StatusBadRequest
-		rep.logger.Debugf("unknown type:%s;", metric.MType)
+		return fmt.Errorf("unknown type:%s;", metric.MType)
 	}
 	if err != nil {
-		retStatus = http.StatusBadRequest
-		rep.logger.Debugf("internal error:%w", err)
+		return fmt.Errorf("internal error updateValue:%w", err)
 	}
-	return retStatus
+	return nil
+}
+
+func (rep *MetricServer) updateValues(metrics []common.Metrics) error {
+	rep.logger.Debugf("updateValues len(metrics):%d", len(metrics))
+	err := rep.memStorage.AddMetrics(metrics)
+	if err != nil {
+		return fmt.Errorf("internal error for updateValues. err:%w", err)
+	}
+	return nil
 }
 func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	body := req.Body
-	rep.logger.Debugf("UpdateJSONValue body:%v", body)
-	if err := json.NewDecoder(body).Decode(&metric); err != nil {
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	rep.logger.Debugf("UpdateJSONValue data body:%v", data)
+	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 	rep.logger.Debugf("UpdateJSONValue json type:%s; name: %s; value:%d; delta:%d;",
 		metric.MType, metric.ID, metric.Value, metric.Delta)
-	retStatus := rep.updateValue(&metric)
-	res.WriteHeader(retStatus)
+	err := rep.updateValue(&metric)
+	if err != nil {
+		rep.logger.Debugf("Problem UpdateJSONValue json. err:%s", err)
+		res.WriteHeader(http.StatusBadRequest)
+	} else {
+		res.WriteHeader(http.StatusOK)
+	}
+}
+
+func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Request) {
+	var metrics []common.Metrics
+	body := req.Body
+	rep.logger.Debugf("UpdatesMetrics body:%v", body)
+	if err := json.NewDecoder(body).Decode(&metrics); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err := rep.updateValues(metrics)
+	if err != nil {
+		rep.logger.Debugf("Problem updateValues . err:%s", err)
+		res.WriteHeader(http.StatusBadRequest)
+	} else {
+		res.WriteHeader(http.StatusOK)
+	}
 }
 
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
-	metric, retStatus := parseURL(req, rep.logger)
+	rep.logger.Debugf("UpdateValue")
+	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus == http.StatusOK {
-		retStatus = rep.updateValue(&metric)
+		rep.logger.Debugf("update value metric:%s; delta:%s", metric, metric.Delta)
+		err := rep.updateValue(&metric)
+		if err != nil {
+			rep.logger.Debugf("Problem UpdateJSONValue json. err:%s", err)
+			res.WriteHeader(http.StatusBadRequest)
+		} else {
+			res.WriteHeader(http.StatusOK)
+		}
+		return
 	}
 	res.WriteHeader(retStatus)
 }
@@ -111,6 +165,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 		temp := float64(val)
 		metric.Value = &temp
 		if err != nil {
+			rep.logger.Debugf("rep.memStorage.GetGaugeValue(metric.ID). err", err)
 			retStatus = http.StatusNotFound
 		}
 	case "counter":
@@ -118,6 +173,7 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 		temp := int64(val)
 		metric.Delta = &temp
 		if err != nil {
+			rep.logger.Debugf("rep.memStorage.GetCounterValue(metric.ID). err", err)
 			retStatus = http.StatusNotFound
 		}
 	default:
@@ -128,9 +184,11 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 }
 func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
-	body := req.Body
-	rep.logger.Debugf("GetJSONValue body:%v", body)
-	if err := json.NewDecoder(body).Decode(&metric); err != nil {
+	data := make([]byte, 10000)
+	n, _ := req.Body.Read(data)
+	data = data[:n]
+	rep.logger.Debugf("GetJSONValue body:%v", data)
+	if err := json.Unmarshal(data, &metric); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -145,6 +203,12 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	sig, err := common.Sign(resp, rep.signKey)
+	if err != nil {
+		rep.logger.Warnf("Error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		req.Header.Set("HashSHA256", b64.StdEncoding.EncodeToString(sig))
+	}
 	res.WriteHeader(retStatus)
 	_, err = res.Write(resp)
 	if err != nil {
@@ -152,16 +216,23 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
-	metric, retStatus := parseURL(req, rep.logger)
+	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus != http.StatusOK {
 		res.WriteHeader(retStatus)
 		return
 	}
 
 	retStatus = rep.getValue(&metric)
-
+	resp := []byte(metric.GetValueMetric())
 	res.WriteHeader(retStatus)
-	_, err := res.Write([]byte(metric.GetValueMetric()))
+	sig, err := common.Sign(resp, rep.signKey)
+	if err != nil {
+		rep.logger.Warnf("Error sign. err: %s\n", err)
+	} else if len(sig) > 0 {
+		req.Header.Set("HashSHA256", b64.StdEncoding.EncodeToString(sig))
+	}
+
+	_, err = res.Write(resp)
 	if err != nil {
 		rep.logger.Debugf("issue for GetValue type:%s; name%s; err:%s\n", metric.MType, metric.ID, err)
 	}

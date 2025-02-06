@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"compress/gzip"
+	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -15,14 +17,14 @@ import (
 
 type MetricRepository struct {
 	Logger       common.Loger
-	LocalStorage *storage.MemStorage
+	LocalStorage storage.BasicStorage
 }
 
-func CreateMetricRepository(localStorage *storage.MemStorage, logger common.Loger) MetricRepository {
+func CreateMetricRepository(localStorage storage.BasicStorage, logger common.Loger) MetricRepository {
 	return MetricRepository{Logger: logger, LocalStorage: localStorage}
 }
 
-func (rep *MetricRepository) SetCounterValue(metricName string, metricValue storage.TypeCounter) error {
+func (rep *MetricRepository) SetCounterValue(metricName string, metricValue common.TypeCounter) error {
 	rep.Logger.Debugf("metricName:%s; metricValue:%s", metricName, metricValue)
 	if rep.LocalStorage == nil {
 		return errors.New("localStorage for repository not init")
@@ -34,7 +36,7 @@ func (rep *MetricRepository) SetCounterValue(metricName string, metricValue stor
 	return nil
 }
 
-func (rep *MetricRepository) SetGaugeValue(metricName string, metricValue storage.TypeGauge) error {
+func (rep *MetricRepository) SetGaugeValue(metricName string, metricValue common.TypeGauge) error {
 	rep.Logger.Debugf("metricName:%s; metricValue:%s\n", metricName, metricValue)
 	if rep.LocalStorage == nil {
 		return errors.New("localStorage for repository not init")
@@ -46,9 +48,9 @@ func (rep *MetricRepository) SetGaugeValue(metricName string, metricValue storag
 	return nil
 }
 
-func (rep *MetricRepository) GetCounterValue(metricName string) (storage.TypeCounter, error) {
+func (rep *MetricRepository) GetCounterValue(metricName string) (common.TypeCounter, error) {
 	if rep.LocalStorage == nil {
-		return storage.TypeCounter(0), errors.New("metricRepository has not been initialize")
+		return common.TypeCounter(0), errors.New("metricRepository has not been initialize")
 	}
 	val, err := rep.LocalStorage.GetCounter(metricName)
 	if err != nil {
@@ -56,9 +58,9 @@ func (rep *MetricRepository) GetCounterValue(metricName string) (storage.TypeCou
 	}
 	return val, nil
 }
-func (rep *MetricRepository) GetGaugeValue(metricName string) (storage.TypeGauge, error) {
+func (rep *MetricRepository) GetGaugeValue(metricName string) (common.TypeGauge, error) {
 	if rep.LocalStorage == nil {
-		return storage.TypeGauge(0), errors.New("metricRepository has not been initialize")
+		return common.TypeGauge(0), errors.New("metricRepository has not been initialize")
 	}
 	val, err := rep.LocalStorage.GetGauge(metricName)
 	if err != nil {
@@ -82,6 +84,19 @@ func (rep *MetricRepository) GetAllValue() ([]string, error) {
 		res = append(res, fmt.Sprintf("name:%s; value:%v;\n", val, t))
 	}
 	return res, nil
+}
+func (rep *MetricRepository) PingDatabase() bool {
+	rep.Logger.Debugf("PingDatabase")
+	return rep.LocalStorage.PingDatabase()
+}
+
+func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
+	rep.Logger.Debugf("AddMetrics len(metrics):%d", len(metrics))
+	err := rep.LocalStorage.AddMetrics(metrics)
+	if err != nil {
+		return fmt.Errorf("problem wit add metrics. err:%w", err)
+	}
+	return nil
 }
 
 type (
@@ -109,20 +124,18 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode // захватываем код статуса
 }
 
-func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
+func WithLogging(logger common.Loger, config *Config, h http.HandlerFunc) http.HandlerFunc {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		uri := r.RequestURI
 		method := r.Method
+
 		responseData := &responseData{
 			status: 0,
 			size:   0,
 		}
 
-		logger.Debugf("test Get(Content-Type)->%s!", r.Header.Get("Content-Type"))
-		logger.Debugf("test Get(Accept-Encoding)->%s!", r.Header.Get("Accept-Encoding"))
-		logger.Debugf("test Get(Content-Encoding)->%s!", r.Header.Get("Content-Encoding"))
 		var lw loggingResponseWriter
 		if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			logger.Debugf("try use gzip")
@@ -146,6 +159,18 @@ func WithLogging(logger common.Loger, h http.HandlerFunc) http.HandlerFunc {
 				responseData:   responseData,
 			}
 		}
+		data := make([]byte, 10000)
+		n, _ := r.Body.Read(data)
+		data = data[:n]
+		msgSign := r.Header.Get("HashSHA256")
+		if msgSign != "" && len(data) > 0 {
+			sig, _ := b64.StdEncoding.DecodeString(msgSign)
+			if !common.CheckHash(data, sig, config.SignKey) {
+				lw.WriteHeader(http.StatusBadRequest)
+			}
+		}
+		r.Body = io.NopCloser(bytes.NewBuffer(data))
+
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",
