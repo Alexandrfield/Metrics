@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
+	_ "net/http/pprof"
+
 	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
 	"github.com/Alexandrfield/Metrics/internal/server"
 	"github.com/Alexandrfield/Metrics/internal/storage"
@@ -30,6 +32,10 @@ func main() {
 			logger.Errorf("Rcovert. Panic occurred. err:%w", err)
 			debug.PrintStack()
 		}
+	}()
+
+	go func() {
+		logger.Infof("start ", http.ListenAndServe("localhost:6060", nil))
 	}()
 
 	config, err := server.GetServerConfig()
