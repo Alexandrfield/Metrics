@@ -65,15 +65,15 @@ func (rep *MetricServer) DefaultAnswer(res http.ResponseWriter, req *http.Reques
 	res.WriteHeader(http.StatusNotImplemented)
 }
 
-// Ping godoc
-// @Tags Info
-// @Summary Check database
-// @ID infoHealth
-// @Accept  json
-// @Produce json
-// @Success 200 {object} ServerOKResponse
-// @Failure 500 {string} string "internal error"
-// @Router /ping [get]
+// Ping godoc.
+// @Tags Info.
+// @Summary Check database.
+// @ID infoHealth.
+// @Accept  json.
+// @Produce json.
+// @Success 200 {object} ServerOKResponse.
+// @Failure 500 {string} string "internal error".
+// @Router /ping [get].
 func (rep *MetricServer) Ping(res http.ResponseWriter, req *http.Request) {
 	rep.logger.Debugf("pingDatabase. req:%v;", req)
 	if rep.memStorage.PingDatabase() {
@@ -111,14 +111,14 @@ func (rep *MetricServer) updateValues(metrics []common.Metrics) error {
 	return nil
 }
 
-// UpdateJSONValue godoc
-// @Tags Storage
-// @Summary update metric
-// @Description update metric by value in json body
-// @Accept  json
-// @Success 200 {object} Ok
-// @Failure 400 {string} string "Bad request"
-// @Router /update [post]
+// UpdateJSONValue godoc.
+// @Tags Storage.
+// @Summary update metric.
+// @Description update metric by value in json body.
+// @Accept  json.
+// @Success 200 {object} Ok.
+// @Failure 400 {string} string "Bad request".
+// @Router /update [post].
 func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
 	data := make([]byte, 10000)
@@ -140,13 +140,13 @@ func (rep *MetricServer) UpdateJSONValue(res http.ResponseWriter, req *http.Requ
 	}
 }
 
-// UpdatesMetrics godoc
-// @Tags Storage
-// @Summary update some metrics
-// @Description update metric
-// @Success 200 {object} Ok
-// @Failure 400 {string} string "Bad request"
-// @Router /updates [post]
+// UpdatesMetrics godoc.
+// @Tags Storage.
+// @Summary update some metrics.
+// @Description update metric.
+// @Success 200 {object} Ok.
+// @Failure 400 {string} string "Bad request".
+// @Router /updates [post].
 func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Request) {
 	var metrics []common.Metrics
 	body := req.Body
@@ -164,13 +164,13 @@ func (rep *MetricServer) UpdatesMetrics(res http.ResponseWriter, req *http.Reque
 	}
 }
 
-// UpdateValue godoc
-// @Tags Storage
-// @Summary update metric
-// @Description update metric
-// @Success 200 {object} Ok
-// @Failure 400 {string} string "Bad request"
-// @Router /update/{id} [post]
+// UpdateValue godoc.
+// @Tags Storage.
+// @Summary update metric.
+// @Description update metric.
+// @Success 200 {object} Ok.
+// @Failure 400 {string} string "Bad request".
+// @Router /update/{id} [post].
 func (rep *MetricServer) UpdateValue(res http.ResponseWriter, req *http.Request) {
 	rep.logger.Debugf("UpdateValue")
 	metric, retStatus := parseURL(req.URL.String(), rep.logger)
@@ -215,13 +215,13 @@ func (rep *MetricServer) getValue(metric *common.Metrics) int {
 	return retStatus
 }
 
-// GetJSONValue godoc
-// @Tags Storage
-// @Summary update metric
-// @Description update metric
-// @Success 200 {object} Ok
-// @Failure 400 {string} string "Bad request"
-// @Router /value [get]
+// GetJSONValue godoc.
+// @Tags Storage.
+// @Summary update metric.
+// @Description update metric.
+// @Success 200 {object} Ok.
+// @Failure 400 {string} string "Bad request".
+// @Router /value [get].
 func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request) {
 	var metric common.Metrics
 	data := make([]byte, 10000)
@@ -256,13 +256,13 @@ func (rep *MetricServer) GetJSONValue(res http.ResponseWriter, req *http.Request
 	}
 }
 
-// GetValue godoc
-// @Tags Storage
-// @Summary update metric
-// @Description update metric
-// @Success 200 {object} Ok
-// @Failure 400 {string} string "Bad request"
-// @Router /value/[id] [get]
+// GetValue godoc.
+// @Tags Storage.
+// @Summary update metric.
+// @Description update metric.
+// @Success 200 {object} Ok.
+// @Failure 400 {string} string "Bad request".
+// @Router /value/[id] [get].
 func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	metric, retStatus := parseURL(req.URL.String(), rep.logger)
 	if retStatus != http.StatusOK {
@@ -286,13 +286,13 @@ func (rep *MetricServer) GetValue(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetAllData godoc
-// @Tags Storage
-// @Summary get info about all metric
-// @Description update metric
-// @Success 200 {object} Ok
-// @Failure 500 {string} string "server errort"
-// @Router / [get]
+// GetAllData godoc.
+// @Tags Storage.
+// @Summary get info about all metric.
+// @Description update metric.
+// @Success 200 {object} Ok.
+// @Failure 500 {string} string "server errort".
+// @Router / [get].
 func (rep *MetricServer) GetAllData(res http.ResponseWriter, req *http.Request) {
 	allValues, err := rep.memStorage.GetAllValue()
 	if err != nil {

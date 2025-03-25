@@ -6,7 +6,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
-// Object for save all type metric.
+// MetricsMap Object for save all type metric.
 type MetricsMap struct {
 	metricsGauge        map[string]common.TypeGauge
 	metricsCounter      map[string]common.TypeCounter
@@ -43,7 +43,8 @@ func (metr *MetricsMap) GetCounter(name string) common.TypeCounter {
 	return metr.metricsCounter[name]
 }
 
-// The function collects that GaugeMetrics that stored metrics and prepares them for sending as an array.
+// PrepareReportGaugeMetrics The function collects that GaugeMetrics
+// that stored metrics and prepares them for sending as an array.
 func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
 	metr.mutexMetricsGauge.RLock()
 	defer metr.mutexMetricsGauge.RUnlock()
@@ -55,7 +56,8 @@ func (metr *MetricsMap) PrepareReportGaugeMetrics() []common.Metrics {
 	return dataMetricForReport
 }
 
-// The function collects all currently stored metrics and prepares them for sending as an array.
+// PrepareReportCounterMetrics The function collects all currently
+// stored metrics and prepares them for sending as an array.
 func (metr *MetricsMap) PrepareReportCounterMetrics() []common.Metrics {
 	metr.mutexMetricsCounter.RLock()
 	defer metr.mutexMetricsCounter.RUnlock()
