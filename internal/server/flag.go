@@ -62,6 +62,7 @@ func parseFlags(config *Config) error {
 	return nil
 }
 
+// GetServerConfig get server config from environment variables anf flags. env is preference.
 func GetServerConfig() (Config, error) {
 	var config Config
 	err := parseFlags(&config)

@@ -15,6 +15,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
+// MetricRepository that object for processing metrics (Set, Get...).
 type MetricRepository struct {
 	Logger       common.Loger
 	LocalStorage storage.BasicStorage

@@ -1,0 +1,14 @@
+basePath: /api/v1
+host: ultimatestore.io:8080
+info:
+  contact: {}
+  description: service for collect metrics.
+  title: MetricServer API
+  version: "1.0"
+paths: {}
+swagger: "2.0"
+tags:
+- description: '"Method for check server"'
+  name: Info
+- description: '"Method for use storage"'
+  name: Storage

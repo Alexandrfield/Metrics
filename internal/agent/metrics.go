@@ -140,6 +140,7 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 	return nil
 }
 
+// AdditionalMetricsWatcher func for start separate gorutin of collecting metrics at intervals specified in the config.
 func AdditionalMetricsWatcher(config Config, metrics *MetricsMap, done chan struct{}) {
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	for {
@@ -164,6 +165,8 @@ func workerSendData(config Config, client *http.Client, metrics *MetricsMap, log
 		}
 	}
 }
+
+// MetricsWatcher is main function for manage collect and send metrics.
 func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
 	var isBatch = true
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)

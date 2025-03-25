@@ -19,6 +19,18 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
+// @Title MetricServer API
+// @Description service for collect metrics.
+// @Version 1.0
+
+// @BasePath /api/v1
+// @Host ultimatestore.io:8080
+
+// @Tag.name Info
+// @Tag.description "Method for check server"
+
+// @Tag.name Storage
+// @Tag.description "Method for use storage"
 func main() {
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {

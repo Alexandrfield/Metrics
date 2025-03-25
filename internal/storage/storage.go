@@ -8,6 +8,7 @@ import (
 	file_storage "github.com/Alexandrfield/Metrics/internal/storage/file"
 )
 
+// BasicStorage is common interface for object save metric.
 type BasicStorage interface {
 	AddCounter(metricName string, metricValue common.TypeCounter) error
 	AddGauge(name string, value common.TypeGauge) error
@@ -18,6 +19,7 @@ type BasicStorage interface {
 	AddMetrics(metrics []common.Metrics) error
 }
 
+// CreateMemStorage create database, file  storage depending on the configuration parameters.
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) BasicStorage {
 	if config.DatabaseDsn != "" {
 		logger.Debugf("Create storage database")
