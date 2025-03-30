@@ -137,6 +137,7 @@ func TestMetricServerPing(t *testing.T) {
 			mServ.Ping(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 			assert.Equal(t, expectdStatus, res.StatusCode)
 		})
 	}
@@ -264,6 +265,7 @@ func TestUpdateJSONValue(t *testing.T) {
 			mServ.UpdateJSONValue(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 			assert.Equal(t, expectdStatus, res.StatusCode)
 		})
 	}
@@ -297,8 +299,8 @@ func TestUpdatesMetrics(t *testing.T) {
 	mServ.UpdatesMetrics(w, request)
 
 	res := w.Result()
+	defer res.Body.Close()
 	assert.Equal(t, expectdStatus, res.StatusCode)
-
 }
 
 func TestGetValue(t *testing.T) {
