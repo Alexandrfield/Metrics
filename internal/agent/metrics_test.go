@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
-	_ "github.com/stretchr/testify"
 	"github.com/stretchr/testify/assert"
 )
 
