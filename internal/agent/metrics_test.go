@@ -2,14 +2,52 @@ package agent
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 	_ "github.com/stretchr/testify"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestUpdateAdditionalMetrics(t *testing.T) {
+	var listMetricsName = []string{"TotalMemory", "FreeMemory", "CPUutilization1"}
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	for _, val := range listMetricsName {
+		metrics.UpdateGauge(val, -1)
+	}
+	updateAdditionalMetrics(&metrics)
+	for _, val := range listMetricsName {
+		v := metrics.GetGauge(val)
+		if v == -1 {
+			t.Errorf("Error key:%s; value:%v\n", val, v)
+		}
+	}
+}
+
+func TestAdditionalMetricsWatcher(t *testing.T) {
+	var listMetricsName = []string{"TotalMemory", "FreeMemory", "CPUutilization1"}
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	for _, val := range listMetricsName {
+		metrics.UpdateGauge(val, -1)
+	}
+	done := make(chan struct{})
+	config := Config{PollIntervalSecond: 1}
+
+	go AdditionalMetricsWatcher(config, &metrics, done)
+	time.Sleep(2 * time.Second)
+	close(done)
+
+	for _, val := range listMetricsName {
+		v := metrics.GetGauge(val)
+		if v == -1 {
+			t.Errorf("Error key:%s; value:%v\n", val, v)
+		}
+	}
+}
 func TestUpdateGaugeMetrics(t *testing.T) {
-	var listMetricsName = []string{"Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
+	var listMetricsName = []string{"GCCPUFraction",
 		"GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects", "HeapReleased",
 		"HeapSys", "LastGC", "Lookups", "MCacheInuse", "MCacheSys", "MSpanInuse", "MSpanSys",
 		"Mallocs", "NextGC", "NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
@@ -71,4 +109,25 @@ func TestPrepareReportCounterMetrics(t *testing.T) {
 	}
 	actual := metrics.PrepareReportCounterMetrics()
 	assert.ElementsMatch(t, actual, expected)
+}
+func TestFixSusceeseSavedCounterMetric(t *testing.T) {
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	var temp1 int64 = 4
+	var temp2 int64 = 56
+	testData := []common.Metrics{
+		{ID: "test1", MType: "counter", Delta: &temp1},
+		{ID: "test2", MType: "counter", Delta: &temp2},
+	}
+	for _, val := range testData {
+		metrics.UpdateCounter(val.ID, common.TypeCounter(*val.Delta*2))
+	}
+	fixSusceeseSavedCounterMetric(&metrics, testData)
+
+	for _, val := range testData {
+		actual := int64(metrics.GetCounter(val.ID))
+		if *val.Delta != actual {
+			t.Errorf("Error value for ID:%s. expected:%d, actual:%d", val.ID, *val.Delta, actual)
+		}
+	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
+//go:generate mockgen -source=request.go -destination=mock/request.go
 type MetricsStorage interface {
 	SetCounterValue(metricName string, metricValue common.TypeCounter) error
 	SetGaugeValue(metricName string, metricValue common.TypeGauge) error

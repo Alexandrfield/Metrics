@@ -81,7 +81,7 @@ func (rep *MetricRepository) GetAllValue() ([]string, error) {
 		res = append(res, fmt.Sprintf("name:%s; value:%v;\n", val, t))
 	}
 	for _, val := range allCounterKeys {
-		t, _ := rep.LocalStorage.GetGauge(val)
+		t, _ := rep.LocalStorage.GetCounter(val)
 		res = append(res, fmt.Sprintf("name:%s; value:%v;\n", val, t))
 	}
 	return res, nil

@@ -49,6 +49,11 @@ func (st *MemFileStorage) saveMemStorageInFile(filename string) {
 func createStringMetric(mtype string, name string, value string) string {
 	return fmt.Sprintf("%s;%s;%s\n", mtype, name, value)
 }
+func NewMemFileStorage(logger common.Loger) *MemFileStorage {
+	memStorage := MemFileStorage{GaugeData: make(map[string]common.TypeGauge),
+		CounterData: make(map[string]common.TypeCounter), Logger: logger}
+	return &memStorage
+}
 func (st *MemFileStorage) saveMemStorage(stream io.Writer) {
 	for key, val := range st.GaugeData {
 		temp := float64(val)
