@@ -54,6 +54,7 @@ func NewMemFileStorage(logger common.Loger) *MemFileStorage {
 		CounterData: make(map[string]common.TypeCounter), Logger: logger}
 	return &memStorage
 }
+
 func (st *MemFileStorage) saveMemStorage(stream io.Writer) {
 	for key, val := range st.GaugeData {
 		temp := float64(val)
@@ -66,6 +67,7 @@ func (st *MemFileStorage) saveMemStorage(stream io.Writer) {
 		_, _ = stream.Write([]byte(createStringMetric(typecounter, key, metric.GetValueMetric())))
 	}
 }
+
 func (st *MemFileStorage) LoadMemStorage(stream io.Reader) {
 	data := make([]byte, 1000)
 	for {
@@ -141,17 +143,13 @@ func (st *MemFileStorage) PingDatabase() bool {
 
 func (st *MemFileStorage) AddMetrics(metrics []common.Metrics) error {
 	for _, metric := range metrics {
-		var err error
 		switch metric.MType {
 		case typegauge:
-			err = st.AddGauge(metric.ID, common.TypeGauge(*metric.Value))
+			_ = st.AddGauge(metric.ID, common.TypeGauge(*metric.Value))
 		case typecounter:
-			err = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
+			_ = st.AddCounter(metric.ID, common.TypeCounter(*metric.Delta))
 		default:
 			return fmt.Errorf("AddMetrics. unknown type:%s;", metric.MType)
-		}
-		if err != nil {
-			st.Logger.Debugf("Problem with add Metrics. err:%s", err)
 		}
 	}
 	return nil
