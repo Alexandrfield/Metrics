@@ -137,7 +137,6 @@ func TestReportMetrics(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{}`))
-		return
 	}))
 	defer server.Close()
 	config := Config{ServerAdderess: "127.0.0.1"}
