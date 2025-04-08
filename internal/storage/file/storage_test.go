@@ -1,7 +1,9 @@
 package filestorage
 
 import (
+	"bytes"
 	"testing"
+	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 	"github.com/stretchr/testify/assert"
@@ -99,11 +101,11 @@ func TestGetCounter(t *testing.T) {
 		value common.TypeCounter
 	}{
 		{
-			name:  "testGauge1",
+			name:  "testCounter1",
 			value: common.TypeCounter(4),
 		},
 		{
-			name:  "testGauge2",
+			name:  "testCounter2",
 			value: common.TypeCounter(49),
 		},
 	}
@@ -185,4 +187,77 @@ func TestAddMetricsNegativ(t *testing.T) {
 	if err == nil {
 		t.Errorf("no detect error metric. actual err nil; ecpected: !nil")
 	}
+}
+func TestSaveMemStorageAndLoad(t *testing.T) {
+	stor := NewMemFileStorage(&common.FakeLogger{})
+	dataTestGauge := []struct {
+		name  string
+		value common.TypeGauge
+	}{
+		{
+			name:  "testGauge1",
+			value: common.TypeGauge(6.1),
+		},
+		{
+			name:  "testGauge2",
+			value: common.TypeGauge(7.89),
+		},
+	}
+	for _, v := range dataTestGauge {
+		_ = stor.AddGauge(v.name, v.value)
+	}
+	dataTestCounter := []struct {
+		name  string
+		value common.TypeCounter
+	}{
+		{
+			name:  "testCounter1",
+			value: common.TypeCounter(4),
+		},
+		{
+			name:  "testCounter2",
+			value: common.TypeCounter(49),
+		},
+	}
+	for _, v := range dataTestCounter {
+		_ = stor.AddCounter(v.name, v.value)
+	}
+	var b bytes.Buffer
+	stor.saveMemStorage(&b)
+	storNew := NewMemFileStorage(&common.FakeLogger{})
+
+	storNew.LoadMemStorage(&b)
+	for _, v := range dataTestGauge {
+		act, err := storNew.GetGauge(v.name)
+		if act != v.value {
+			t.Errorf("bad data gauge metric:%s. actual:%f; ecpected:%f", v.name, act, v.value)
+			return
+		}
+		if err != nil {
+			t.Errorf("expected err: nil. actual:%s", err)
+			return
+		}
+	}
+	for _, v := range dataTestCounter {
+		act, err := storNew.GetCounter(v.name)
+		if act != v.value {
+			t.Errorf("bad data counter metric:%s. actual:%d; ecpected:%d", v.name, act, v.value)
+			return
+		}
+		if err != nil {
+			t.Errorf("expected err: nil. actual:%s", err)
+			return
+		}
+	}
+}
+
+func TestStorageSaver(t *testing.T) {
+	stor := NewMemFileStorage(&common.FakeLogger{})
+	done := make(chan struct{})
+	go func() {
+		time.Sleep(3 * time.Second)
+		close(done)
+	}()
+	go StorageSaver(stor, "", 2, done)
+	<-done
 }
