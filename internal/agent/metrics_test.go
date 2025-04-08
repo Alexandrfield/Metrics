@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -129,4 +131,21 @@ func TestFixSusceeseSavedCounterMetric(t *testing.T) {
 			t.Errorf("Error value for ID:%s. expected:%d, actual:%d", val.ID, *val.Delta, actual)
 		}
 	}
+}
+
+func TestReportMetrics(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{}`))
+		return
+	}))
+	defer server.Close()
+	config := Config{ServerAdderess: "127.0.0.1"}
+	var temp1 int64 = 4
+	var temp2 int64 = 56
+	testData := []common.Metrics{
+		{ID: "test1", MType: "counter", Delta: &temp1},
+		{ID: "test2", MType: "counter", Delta: &temp2},
+	}
+	reportMetrics(server.Client(), config, testData, &common.FakeLogger{})
 }

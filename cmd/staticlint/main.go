@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/ZnNr/go-musthave-metrics.git/internal/staticlint"
+	"github.com/Alexandrfield/Metrics/internal/staticlint"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/printf"
