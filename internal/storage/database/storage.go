@@ -23,6 +23,10 @@ type MemDatabaseStorage struct {
 	DatabaseDsn string
 }
 
+func NewMemDatabaseStorage(logger common.Loger, dsn string) *MemDatabaseStorage {
+	memStorage := MemDatabaseStorage{Logger: logger, DatabaseDsn: dsn}
+	return &memStorage
+}
 func (st *MemDatabaseStorage) createTable(ctx context.Context) error {
 	const query = `CREATE TABLE if NOT EXISTS metrics (id text PRIMARY KEY, 
 	mtype text, delta bigint, value DOUBLE PRECISION)`

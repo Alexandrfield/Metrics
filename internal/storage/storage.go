@@ -8,6 +8,9 @@ import (
 	file_storage "github.com/Alexandrfield/Metrics/internal/storage/file"
 )
 
+//go:generate mockgen -source=storage.go -destination=mock/storage.go
+
+// BasicStorage is common interface for object save metric.
 type BasicStorage interface {
 	AddCounter(metricName string, metricValue common.TypeCounter) error
 	AddGauge(name string, value common.TypeGauge) error
@@ -18,19 +21,19 @@ type BasicStorage interface {
 	AddMetrics(metrics []common.Metrics) error
 }
 
+// CreateMemStorage create database, file  storage depending on the configuration parameters.
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) BasicStorage {
 	if config.DatabaseDsn != "" {
 		logger.Debugf("Create storage database")
-		memStorage := database_storage.MemDatabaseStorage{Logger: logger, DatabaseDsn: config.DatabaseDsn}
+		memStorage := database_storage.NewMemDatabaseStorage(logger, config.DatabaseDsn)
 		err := memStorage.Start()
 		if err != nil {
 			logger.Debugf("Issue with start database %s", err)
 		}
-		return &memStorage
+		return memStorage
 	} else {
 		logger.Debugf("Create storage file")
-		memStorage := file_storage.MemFileStorage{GaugeData: make(map[string]common.TypeGauge),
-			CounterData: make(map[string]common.TypeCounter), Logger: logger}
+		memStorage := file_storage.NewMemFileStorage(logger)
 		logger.Debugf("config.Restore %s", config.Restore)
 		if config.Restore {
 			file, err := os.OpenFile(config.FileStoregePath, os.O_RDONLY, 0o600)
@@ -45,8 +48,8 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) Ba
 			}
 		}
 		if config.StoreIntervalSecond != 0 {
-			go file_storage.StorageSaver(&memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
+			go file_storage.StorageSaver(memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
 		}
-		return &memStorage
+		return memStorage
 	}
 }

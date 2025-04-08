@@ -9,14 +9,28 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+
+	_ "net/http/pprof"
 
 	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
 	"github.com/Alexandrfield/Metrics/internal/server"
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
+// @Title MetricServer API.
+// @Description service for collect metrics.
+// @Version 1.0.
+
+// @BasePath /api/v1.
+// @Host ultimatestore.io:8080.
+
+// @Tag.name Info.
+// @Tag.description "Method for check server".
+
+// @Tag.name Storage.
+// @Tag.description "Method for use storage".
 func main() {
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {
@@ -30,6 +44,10 @@ func main() {
 			logger.Errorf("Rcovert. Panic occurred. err:%w", err)
 			debug.PrintStack()
 		}
+	}()
+
+	go func() {
+		logger.Infof("start ", http.ListenAndServe("localhost:6060", nil))
 	}()
 
 	config, err := server.GetServerConfig()
