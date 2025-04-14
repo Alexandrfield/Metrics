@@ -13,7 +13,7 @@ var ExitFromMainAnalyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
-func ispectFunc(decl invalid) {
+func ispectFunc(decl ast.Decl) {
 	ast.Inspect(decl, func(n ast.Node) bool {
 		// только вызовы функций
 		if c, ok := n.(*ast.CallExpr); ok {
