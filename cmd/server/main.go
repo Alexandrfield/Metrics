@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,6 +20,12 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 // @Title MetricServer API.
 // @Description service for collect metrics.
 // @Version 1.0.
@@ -32,6 +39,9 @@ import (
 // @Tag.name Storage.
 // @Tag.description "Method for use storage".
 func main() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 	zapLogger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatal("Can not initializate zap logger. err:%w", err)

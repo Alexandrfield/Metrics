@@ -219,3 +219,20 @@ func TestGetAllMetricName(t *testing.T) {
 	actual = append(actual, keysGauge...)
 	assert.ElementsMatch(t, actual, expected)
 }
+
+func TestCreateMemStorage(t *testing.T) {
+	storageConfig := Config{DatabaseDsn: "testerr", StoreIntervalSecond: 0, Restore: false}
+	done := make(chan struct{})
+	memStorage := CreateMemStorage(storageConfig, &common.FakeLogger{}, done)
+	if memStorage == nil {
+		t.Errorf("problem with create db")
+	}
+}
+func TestCreateMemStorageSecond(t *testing.T) {
+	storageConfig := Config{FileStoregePath: "", StoreIntervalSecond: 3, Restore: true}
+	done := make(chan struct{})
+	memStorage := CreateMemStorage(storageConfig, &common.FakeLogger{}, done)
+	if memStorage == nil {
+		t.Errorf("problem with create db file")
+	}
+}

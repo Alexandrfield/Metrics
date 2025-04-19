@@ -15,6 +15,8 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/storage"
 )
 
+//go:generate mockgen -source=server.go -destination=mock/server.go
+
 // MetricRepository that object for processing metrics (Set, Get...).
 type MetricRepository struct {
 	Logger       common.Loger
@@ -100,13 +102,20 @@ func (rep *MetricRepository) AddMetrics(metrics []common.Metrics) error {
 	return nil
 }
 
+// interface http.ResponseWriter
+type ResponseWriter interface {
+	Header() http.Header
+	Write([]byte) (int, error)
+	WriteHeader(statusCode int)
+}
+
 type (
 	responseData struct {
 		status int
 		size   int
 	}
 	loggingResponseWriter struct {
-		http.ResponseWriter
+		ResponseWriter
 		responseData *responseData
 	}
 )

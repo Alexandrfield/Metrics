@@ -14,6 +14,8 @@ import (
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
+//go:generate mockgen -source=storage.go -destination=mock/storage.go
+
 const typecounter = "counter"
 const typegauge = "gauge"
 

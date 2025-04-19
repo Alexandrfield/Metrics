@@ -69,13 +69,19 @@ func TestParseURL(t *testing.T) {
 			metr:   common.Metrics{ID: "testC4", MType: "counter"},
 			status: http.StatusNotFound,
 		},
+		{
+			name:   "negativ counter 5",
+			url:    "localhost/update/counter/testC2/ttttttt",
+			metr:   common.Metrics{ID: "testC5", MType: "counter"},
+			status: http.StatusBadRequest,
+		},
 	}
 	for _, test := range testData {
 		t.Run(test.name, func(t *testing.T) {
 
 			metr, st := parseURL(test.url, &common.FakeLogger{})
 			if st != test.status {
-				t.Errorf("problem parse url. status actual%d; expected:%d", st, test.status)
+				t.Errorf("problem parse url %s. status actual%d; expected:%d", test.name, st, test.status)
 				return
 			}
 			if st != http.StatusOK {
@@ -337,11 +343,17 @@ func TestGetValue(t *testing.T) {
 			}
 
 			mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
-
 			st := mServ.getValue(&test.metr)
 			assert.Equal(t, test.status, st)
 		})
 	}
+}
+func TestGetValueDef(t *testing.T) {
+	testG1V := 54.7
+	metr := common.Metrics{ID: "testG1", Value: &testG1V, MType: "testErr"}
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: nil, signKey: signKey}
+	st := mServ.getValue(&metr)
+	assert.Equal(t, http.StatusNotFound, st)
 }
 
 func TestGetJSONValue(t *testing.T) {
@@ -393,4 +405,24 @@ func TestGetJSONValue(t *testing.T) {
 			assert.Equal(t, test.expected, string(dataT[:n]))
 		})
 	}
+}
+
+func TestGetJSONValueErr(t *testing.T) {
+	jsonDat := `rrr`
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/", myReader)
+	w := httptest.NewRecorder()
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+
+	mServ.GetJSONValue(w, request)
+
+	res := w.Result()
+
+	res.Body.Close()
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
