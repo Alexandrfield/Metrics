@@ -3,11 +3,24 @@ package agent
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
+
+func getKeyFromFile(path string) []byte {
+	if path == "" {
+		return []byte{}
+	}
+	fContent, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("promlem read file. err:%s", err)
+		return []byte{}
+	}
+	return fContent
+}
 
 func parseFlags(conf *Config) error {
 	flag.StringVar(&conf.ServerAdderess, "a", "localhost:8080",
@@ -21,6 +34,9 @@ func parseFlags(conf *Config) error {
 	var signKey string
 	flag.StringVar(&signKey, "k", "",
 		"key for sign [default: nil]")
+	var pathToKey string
+	flag.StringVar(&pathToKey, "crypto-key", "",
+		"path to file with key for [default: nil]")
 	flag.Parse()
 
 	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
@@ -60,6 +76,10 @@ func parseFlags(conf *Config) error {
 			conf.PollIntervalSecond = value
 		}
 	}
+	if envPathCryptoKey, ok := os.LookupEnv("CRYPTO_KEY"); ok {
+		pathToKey = envPathCryptoKey
+	}
+	conf.CryptoKeyOpen = getKeyFromFile(pathToKey)
 	return nil
 }
 

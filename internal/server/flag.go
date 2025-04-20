@@ -3,11 +3,24 @@ package server
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
+
+func getKeyFromFile(path string) []byte {
+	if path == "" {
+		return []byte{}
+	}
+	fContent, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("promlem read file. err:%s", err)
+		return []byte{}
+	}
+	return fContent
+}
 
 func parseFlags(config *Config) error {
 	flag.StringVar(&config.ServerAdderess, "a", "localhost:8080",
@@ -23,6 +36,9 @@ func parseFlags(config *Config) error {
 		"interval in seconds for save results on disk [default:300]")
 	flag.BoolVar(&config.Restore, "r", true,
 		"bool param if we need read exists file with  metrics [default:true]")
+	var pathToKey string
+	flag.StringVar(&pathToKey, "crypto-key", "",
+		"path to crypto key")
 	flag.Parse()
 
 	if envServerAdderess, ok := os.LookupEnv("ADDRESS"); ok {
@@ -59,6 +75,10 @@ func parseFlags(config *Config) error {
 			config.Restore = value
 		}
 	}
+	if envPathCryptoKey, ok := os.LookupEnv("CRYPTO_KEY"); ok {
+		pathToKey = envPathCryptoKey
+	}
+	config.CryptoKeySec = getKeyFromFile(pathToKey)
 	return nil
 }
 
