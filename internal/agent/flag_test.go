@@ -32,3 +32,20 @@ func TestParseFile(t *testing.T) {
 		t.Errorf("StoreIntervalSecond actual:%d; expected:%d", config.PollIntervalSecond, expectedPollIntervalSecond)
 	}
 }
+
+func TestParseJSONFile(t *testing.T) {
+	var data string = `{"address": "localhost:8080","report_interval": "1s","poll_interval": "1s",
+	 "crypto_key": "/path/to/key.pem"}`
+	var conf *Config = parseJson([]byte(data))
+	if conf == nil {
+		t.Error("config nil!")
+		return
+	}
+
+	if conf.PollIntervalSecond != 1 {
+		t.Errorf("StoreIntervalSecond actual:%d, expected:%d", conf.PollIntervalSecond, 1)
+	}
+	if conf.ServerAdderess != "localhost:8080" {
+		t.Errorf("ServerAdderess actual:%s, expected:%s", conf.ServerAdderess, "localhost:8080")
+	}
+}
