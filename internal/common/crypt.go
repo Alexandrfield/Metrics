@@ -88,12 +88,12 @@ func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	if enc {
 		b, err = x509.DecryptPEMBlock(block, nil)
 		if err != nil {
-			return nil, fmt.Errorf("decrypt pem block. err:", err)
+			return nil, fmt.Errorf("decrypt pem block. err:%f", err)
 		}
 	}
 	ifc, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
-		return nil, fmt.Errorf("parse pub key. err:", err)
+		return nil, fmt.Errorf("parse pub key. err:%f", err)
 	}
 	key, ok := ifc.(*rsa.PublicKey)
 	if !ok {
@@ -102,7 +102,7 @@ func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	return key, nil
 }
 func EncryptData(msg []byte, key []byte, logger Loger) []byte {
-	var res []byte
+	var res []byte = msg
 	if len(msg) > 0 && len(key) > 0 {
 		pybKey, err := BytesToPublicKey(key)
 		if err != nil {
@@ -119,7 +119,7 @@ func EncryptData(msg []byte, key []byte, logger Loger) []byte {
 	return res
 }
 func DecryptData(msg []byte, key []byte, logger Loger) []byte {
-	var res []byte
+	var res []byte = msg
 	if len(msg) > 0 && len(key) > 0 {
 		privKey, err := BytesToPrivateKey(key)
 		if err != nil {

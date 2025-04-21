@@ -179,6 +179,7 @@ func WithLogging(logger common.Loger, config *Config, h http.HandlerFunc) http.H
 				lw.WriteHeader(http.StatusBadRequest)
 			}
 		}
+		data = common.DecryptData(data, config.CryptoKeySec, logger)
 		r.Body = io.NopCloser(bytes.NewBuffer(data))
 
 		h.ServeHTTP(&lw, r)
