@@ -46,6 +46,18 @@ func parseFlags(config *Config) error {
 		config = configT
 	}
 
+	if serverAdderessTemp != "" {
+		config.ServerAdderess = serverAdderessTemp
+	}
+	if reportIntervalSecondTemp != 0 {
+		config.ReportIntervalSecond = reportIntervalSecondTemp
+	}
+	if pollIntervalSecondTemp != 0 {
+		config.PollIntervalSecond = pollIntervalSecondTemp
+	}
+	if rateLimitTemp != 0 {
+		config.RateLimit = rateLimitTemp
+	}
 	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
 		config.ServerAdderess = envServerAdderess
 	}
@@ -54,7 +66,9 @@ func parseFlags(config *Config) error {
 		signKeyTemp = envSignKey
 	}
 	var err error
-	config.SignKey, err = common.GetKeyFromString(signKeyTemp)
+	if signKeyTemp != "" {
+		config.SignKey, err = common.GetKeyFromString(signKeyTemp)
+	}
 	if err != nil {
 		return fmt.Errorf("try get sign key: %w", err)
 	}
@@ -102,7 +116,7 @@ func parseJson(data []byte) *Config {
 	var config Config
 	config.CryptoKeyOpen = common.GetDataFromFile(conf.CryptoKeyOpen)
 	config.ServerAdderess = conf.ServerAdderess
-	config.SignKey = []byte(conf.SignKey)
+	config.SignKey, _ = common.GetKeyFromString(conf.SignKey)
 	config.RateLimit = conf.RateLimit
 	duration, err := time.ParseDuration(conf.PollIntervalSecond)
 	if err != nil {

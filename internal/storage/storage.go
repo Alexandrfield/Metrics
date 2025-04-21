@@ -19,10 +19,12 @@ type BasicStorage interface {
 	GetAllMetricName() ([]string, []string)
 	PingDatabase() bool
 	AddMetrics(metrics []common.Metrics) error
+	Close()
 }
 
 // CreateMemStorage create database, file  storage depending on the configuration parameters.
 func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) BasicStorage {
+	var res BasicStorage
 	if config.DatabaseDsn != "" {
 		logger.Debugf("Create storage database")
 		memStorage := database_storage.NewMemDatabaseStorage(logger, config.DatabaseDsn)
@@ -30,10 +32,10 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) Ba
 		if err != nil {
 			logger.Debugf("Issue with start database %s", err)
 		}
-		return memStorage
+		res = memStorage
 	} else {
 		logger.Debugf("Create storage file")
-		memStorage := file_storage.NewMemFileStorage(logger)
+		memStorage := file_storage.NewMemFileStorage(config.FileStoregePath, logger)
 		logger.Debugf("config.Restore %s", config.Restore)
 		if config.Restore {
 			file, err := os.OpenFile(config.FileStoregePath, os.O_RDONLY, 0o600)
@@ -47,9 +49,12 @@ func CreateMemStorage(config Config, logger common.Loger, done chan struct{}) Ba
 				logger.Debugf("can not restore file. File is not exist. err:%w", err)
 			}
 		}
-		if config.StoreIntervalSecond != 0 {
-			go file_storage.StorageSaver(memStorage, config.FileStoregePath, config.StoreIntervalSecond, done)
-		}
-		return memStorage
+		go file_storage.StorageSaver(memStorage, config.StoreIntervalSecond, done)
+		res = memStorage
 	}
+	go func() {
+		<-done
+		res.Close()
+	}()
+	return res
 }

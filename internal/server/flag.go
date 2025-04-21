@@ -66,7 +66,9 @@ func parseFlags(config *Config) error {
 		signKeyTemp = envSignKey
 	}
 	var err error
-	config.SignKey, err = common.GetKeyFromString(signKeyTemp)
+	if signKeyTemp != "" {
+		config.SignKey, err = common.GetKeyFromString(signKeyTemp)
+	}
 	if err != nil {
 		return fmt.Errorf("try get sign key: %w", err)
 	}
@@ -114,7 +116,7 @@ func parseJson(data []byte) *Config {
 	config.FileStoregePath = conf.FileStoregePath
 	config.Restore = conf.Restore
 	config.ServerAdderess = conf.ServerAdderess
-	config.SignKey = []byte(conf.SignKey)
+	config.SignKey, _ = common.GetKeyFromString(conf.SignKey)
 	duration, err := time.ParseDuration(conf.StoreIntervalSecond)
 	if err != nil {
 		return nil

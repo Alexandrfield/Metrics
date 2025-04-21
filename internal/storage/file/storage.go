@@ -6,12 +6,14 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 )
 
 var ErrMetricNotExistIssue = errors.New("metric with this name or type is does't exist")
+var ErrObjectHasbeenClosed = errors.New("metric storage MemFileStorage has been already closed")
 
 const typecounter = "counter"
 const typegauge = "gauge"
@@ -20,24 +22,42 @@ type MemFileStorage struct {
 	GaugeData   map[string]common.TypeGauge
 	CounterData map[string]common.TypeCounter
 	Logger      common.Loger
+	filepath    string
+	isCreated   bool
+	lock        sync.Mutex
 }
 
-func StorageSaver(memStorage *MemFileStorage, filepath string, saveIntervalSecond int, done chan struct{}) {
-	tickerSaveInterval := time.NewTicker(time.Duration(saveIntervalSecond) * time.Second)
-	for {
-		select {
-		case <-done:
-			memStorage.saveMemStorageInFile(filepath)
-			return
-		case <-tickerSaveInterval.C:
-			memStorage.saveMemStorageInFile(filepath)
+func StorageSaver(memStorage *MemFileStorage, saveIntervalSecond int, done chan struct{}) {
+	if saveIntervalSecond != 0 {
+		tickerSaveInterval := time.NewTicker(time.Duration(saveIntervalSecond) * time.Second)
+		for {
+			select {
+			case <-done:
+				memStorage.close()
+				return
+			case <-tickerSaveInterval.C:
+				memStorage.saveMemStorageInFile()
+			}
 		}
+	} else {
+		<-done
+		memStorage.close()
 	}
 }
-func (st *MemFileStorage) saveMemStorageInFile(filename string) {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0o600)
+func (st *MemFileStorage) Close() {
+	// action will be done in StorageSaver
+}
+func (st *MemFileStorage) close() {
+	if st.isCreated {
+		st.isCreated = false
+		st.lock.Lock()
+		st.saveMemStorageInFile()
+	}
+}
+func (st *MemFileStorage) saveMemStorageInFile() {
+	file, err := os.OpenFile(st.filepath, os.O_WRONLY|os.O_CREATE, 0o600)
 	if err != nil {
-		st.Logger.Debugf("Issue with open %s %w", filename, err)
+		st.Logger.Debugf("Issue with open %s %w", st.filepath, err)
 		return
 	}
 	defer func() {
@@ -49,13 +69,18 @@ func (st *MemFileStorage) saveMemStorageInFile(filename string) {
 func createStringMetric(mtype string, name string, value string) string {
 	return fmt.Sprintf("%s;%s;%s\n", mtype, name, value)
 }
-func NewMemFileStorage(logger common.Loger) *MemFileStorage {
+func NewMemFileStorage(filepath string, logger common.Loger) *MemFileStorage {
 	memStorage := MemFileStorage{GaugeData: make(map[string]common.TypeGauge),
-		CounterData: make(map[string]common.TypeCounter), Logger: logger}
+		CounterData: make(map[string]common.TypeCounter), isCreated: true, filepath: filepath, Logger: logger}
 	return &memStorage
 }
 
 func (st *MemFileStorage) saveMemStorage(stream io.Writer) {
+	if !st.isCreated {
+		return
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	for key, val := range st.GaugeData {
 		temp := float64(val)
 		metric := common.Metrics{ID: key, MType: typegauge, Value: &temp}
@@ -69,6 +94,11 @@ func (st *MemFileStorage) saveMemStorage(stream io.Writer) {
 }
 
 func (st *MemFileStorage) LoadMemStorage(stream io.Reader) {
+	if !st.isCreated {
+		return
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	data := make([]byte, 1000)
 	for {
 		n, err := stream.Read(data)
@@ -99,10 +129,20 @@ func (st *MemFileStorage) LoadMemStorage(stream io.Reader) {
 }
 
 func (st *MemFileStorage) AddGauge(name string, value common.TypeGauge) error {
+	if !st.isCreated {
+		return ErrObjectHasbeenClosed
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	st.GaugeData[name] = value
 	return nil
 }
 func (st *MemFileStorage) GetGauge(name string) (common.TypeGauge, error) {
+	if !st.isCreated {
+		return common.TypeGauge(0), ErrObjectHasbeenClosed
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	val, ok := st.GaugeData[name]
 	if !ok {
 		return common.TypeGauge(0), fmt.Errorf("can't find Gauge metric with name:%s;err:%w", name, ErrMetricNotExistIssue)
@@ -110,6 +150,11 @@ func (st *MemFileStorage) GetGauge(name string) (common.TypeGauge, error) {
 	return val, nil
 }
 func (st *MemFileStorage) AddCounter(name string, value common.TypeCounter) error {
+	if !st.isCreated {
+		return ErrObjectHasbeenClosed
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	val, ok := st.CounterData[name]
 	if !ok {
 		val = 0
@@ -118,6 +163,11 @@ func (st *MemFileStorage) AddCounter(name string, value common.TypeCounter) erro
 	return nil
 }
 func (st *MemFileStorage) GetCounter(name string) (common.TypeCounter, error) {
+	if !st.isCreated {
+		return common.TypeCounter(0), ErrObjectHasbeenClosed
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	val, ok := st.CounterData[name]
 	if !ok {
 		return common.TypeCounter(0), fmt.Errorf("can't find Counter metric with name:%s;err:%w",
@@ -126,6 +176,11 @@ func (st *MemFileStorage) GetCounter(name string) (common.TypeCounter, error) {
 	return val, nil
 }
 func (st *MemFileStorage) GetAllMetricName() ([]string, []string) {
+	if !st.isCreated {
+		return []string{}, []string{}
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	allGaugeKeys := make([]string, 0)
 	for key := range st.GaugeData {
 		allGaugeKeys = append(allGaugeKeys, key)
@@ -142,6 +197,11 @@ func (st *MemFileStorage) PingDatabase() bool {
 }
 
 func (st *MemFileStorage) AddMetrics(metrics []common.Metrics) error {
+	if !st.isCreated {
+		return ErrObjectHasbeenClosed
+	}
+	st.lock.Lock()
+	defer st.lock.Unlock()
 	for _, metric := range metrics {
 		switch metric.MType {
 		case typegauge:

@@ -65,12 +65,6 @@ func main() {
 		logger.Fatalf("Cant init server. err:%w", err)
 	}
 	done := make(chan struct{})
-	defer func() {
-		close(done)
-		logger.Info("Server stoping ... ")
-		time.Sleep(1 * time.Second)
-		logger.Info("Server stoped")
-	}()
 	logger.Debugf("config file ServerAdderess: %s; FileStoregePath:%s; database:",
 		config.ServerAdderess, config.FileStoregePath)
 	storageConfig := storage.Config{FileStoregePath: config.FileStoregePath,
@@ -92,6 +86,13 @@ func main() {
 	router.Post(`/update/*`, server.WithLogging(logger, &config, servHandler.UpdateValue))
 	router.Post(`/update/`, server.WithLogging(logger, &config, servHandler.UpdateJSONValue))
 	router.Post(`/updates/`, server.WithLogging(logger, &config, servHandler.UpdatesMetrics))
+
+	defer func() {
+		close(done)
+		logger.Info("Server stoping ... ")
+		time.Sleep(1 * time.Second)
+		logger.Info("Server stoped")
+	}()
 
 	logger.Info("Server started")
 	go func() {

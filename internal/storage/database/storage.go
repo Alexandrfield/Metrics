@@ -37,6 +37,11 @@ func (st *MemDatabaseStorage) createTable(ctx context.Context) error {
 	}
 	return nil
 }
+func (st *MemDatabaseStorage) Close() {
+	if st.db != nil {
+		st.db.Close()
+	}
+}
 func (st *MemDatabaseStorage) Start() error {
 	var err error
 	st.db, err = sql.Open("pgx", st.DatabaseDsn)
