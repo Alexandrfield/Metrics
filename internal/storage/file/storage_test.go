@@ -2,6 +2,7 @@ package filestorage
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 	"time"
 
@@ -260,4 +261,48 @@ func TestStorageSaver(t *testing.T) {
 	}()
 	go StorageSaver(stor, 2, done)
 	<-done
+}
+
+func TestStorageSaverFalse(t *testing.T) {
+	stor := NewMemFileStorage("", &common.FakeLogger{})
+	stor.isCreated = false
+	done := make(chan struct{})
+	go func() {
+		time.Sleep(3 * time.Second)
+		close(done)
+	}()
+	go StorageSaver(stor, 2, done)
+	<-done
+}
+func TestNotCreatedStor(t *testing.T) {
+	stor := NewMemFileStorage("", &common.FakeLogger{})
+	stor.isCreated = false
+	err := stor.AddCounter("test", common.TypeCounter(44))
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	err = stor.AddGauge("test", common.TypeGauge(43.8))
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddGauge eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	_, err = stor.GetCounter("test")
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("GetCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	_, err = stor.GetGauge("test")
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	t1, t2 := stor.GetAllMetricName()
+	if len(t1) != 0 || len(t2) != 0 {
+		t.Errorf("GetAllMetricName expected len:0; actual len:%d; %d", len(t1), len(t2))
+		return
+	}
+	var b bytes.Buffer
+	stor.saveMemStorage(&b)
+	stor.LoadMemStorage(&b)
 }

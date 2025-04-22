@@ -2,6 +2,7 @@ package requesthandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -425,4 +426,132 @@ func TestGetJSONValueErr(t *testing.T) {
 
 	res.Body.Close()
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestGetServ(t *testing.T) {
+	jsonDat := `rrr`
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/гзв", myReader)
+	w := httptest.NewRecorder()
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+	mServ.GetJSONValue(w, request)
+	res := w.Result()
+	res.Body.Close()
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
+func TestUpdateValuesNil(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	errT := fmt.Errorf("test err")
+	mockBasicStorage.EXPECT().AddMetrics(gomock.Any()).Return(errT).Times(1)
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+
+	err := mServ.updateValues([]common.Metrics{})
+	if err == nil {
+		t.Errorf("expected not nil error")
+	}
+}
+
+func TestGetValue2(t *testing.T) {
+	jsonDat := `rrr`
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/counter/33", myReader)
+	w := httptest.NewRecorder()
+	mockBasicStorage.EXPECT().GetCounterValue(gomock.Any()).Return(common.TypeCounter(44), nil)
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+	mServ.GetValue(w, request)
+	res := w.Result()
+	res.Body.Close()
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+func TestGetValueErr(t *testing.T) {
+	jsonDat := `rrr`
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/counter/33", myReader)
+	w := httptest.NewRecorder()
+	errT := fmt.Errorf("test err")
+	mockBasicStorage.EXPECT().GetCounterValue(gomock.Any()).Return(common.TypeCounter(44), errT)
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+	mServ.GetValue(w, request)
+	res := w.Result()
+	res.Body.Close()
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func TestGetGetAllData(t *testing.T) {
+	metricsGaugeName := []string{"testGauge1", "testGauge2"}
+	metricsGaugeVal := []float64{6.7, 7.89}
+	metricsCounterName := []string{"testCounter1", "testCounter2"}
+	metricsCounterval := []int64{56, 12}
+
+	testMetrics := []common.Metrics{
+		{ID: metricsGaugeName[0], MType: "gauge", Value: &metricsGaugeVal[0]},
+		{ID: metricsGaugeName[1], MType: "gauge", Value: &metricsGaugeVal[1]},
+		{ID: metricsCounterName[0], MType: "counter", Delta: &metricsCounterval[0]},
+		{ID: metricsCounterName[1], MType: "counter", Delta: &metricsCounterval[1]},
+	}
+
+	var jsonTestData []string
+	for _, v := range testMetrics {
+		strd, _ := json.Marshal(v)
+		jsonTestData = append(jsonTestData, string(strd))
+	}
+	jsonDat := `rrr`
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/counter/33", myReader)
+	w := httptest.NewRecorder()
+	mockBasicStorage.EXPECT().GetAllValue().Return(jsonTestData, nil)
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+	mServ.GetAllData(w, request)
+	res := w.Result()
+	res.Body.Close()
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func TestGetGetAllDataErr(t *testing.T) {
+	metricsGaugeName := []string{"testGauge1", "testGauge2"}
+	metricsGaugeVal := []float64{6.7, 7.89}
+	metricsCounterName := []string{"testCounter1", "testCounter2"}
+	metricsCounterval := []int64{56, 12}
+
+	testMetrics := []common.Metrics{
+		{ID: metricsGaugeName[0], MType: "gauge", Value: &metricsGaugeVal[0]},
+		{ID: metricsGaugeName[1], MType: "gauge", Value: &metricsGaugeVal[1]},
+		{ID: metricsCounterName[0], MType: "counter", Delta: &metricsCounterval[0]},
+		{ID: metricsCounterName[1], MType: "counter", Delta: &metricsCounterval[1]},
+	}
+
+	var jsonTestData []string
+	for _, v := range testMetrics {
+		strd, _ := json.Marshal(v)
+		jsonTestData = append(jsonTestData, string(strd))
+	}
+	jsonDat := `rrr`
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockBasicStorage := mock.NewMockMetricsStorage(ctrl)
+	myReader := strings.NewReader(jsonDat)
+	request := httptest.NewRequest(http.MethodGet, "/value/counter/33", myReader)
+	w := httptest.NewRecorder()
+	errT := fmt.Errorf("test err")
+	mockBasicStorage.EXPECT().GetAllValue().Return(jsonTestData, errT)
+	mServ := MetricServer{logger: &common.FakeLogger{}, memStorage: mockBasicStorage, signKey: signKey}
+	mServ.GetAllData(w, request)
+	res := w.Result()
+	res.Body.Close()
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }

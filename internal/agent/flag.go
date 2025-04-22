@@ -58,13 +58,7 @@ func parseFlags(config *Config) error {
 	if rateLimitTemp != 0 {
 		config.RateLimit = rateLimitTemp
 	}
-	if envServerAdderess := os.Getenv("ADDRESS"); envServerAdderess != "" {
-		config.ServerAdderess = envServerAdderess
-	}
 
-	if envSignKey := os.Getenv("KEY"); envSignKey != "" {
-		signKeyTemp = envSignKey
-	}
 	var err error
 	if signKeyTemp != "" {
 		config.SignKey, err = common.GetKeyFromString(signKeyTemp)

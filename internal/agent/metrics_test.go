@@ -148,3 +148,55 @@ func TestReportMetrics(t *testing.T) {
 	}
 	reportMetrics(server.Client(), config, testData, &common.FakeLogger{})
 }
+
+func TestMetricsWatcher(t *testing.T) {
+	done := make(chan struct{})
+	config := Config{PollIntervalSecond: 10, ReportIntervalSecond: 10, RateLimit: 1}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{}`))
+	}))
+	go MetricsWatcher(config, server.Client(), &common.FakeLogger{}, done)
+	time.Sleep(2 * time.Second)
+	close(done)
+}
+
+func TestReportAllMetrics(t *testing.T) {
+	var temp1 int64 = 4
+	var temp2 int64 = 56
+	testData := []common.Metrics{
+		{ID: "test1", MType: "counter", Delta: &temp1},
+		{ID: "test2", MType: "counter", Delta: &temp2},
+	}
+	config := Config{PollIntervalSecond: 10, ReportIntervalSecond: 10, RateLimit: 1}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{}`))
+	}))
+	reportAllMetrics(server.Client(), config, testData, &common.FakeLogger{})
+}
+
+func TestWorkerSendData(t *testing.T) {
+	metrics := MetricsMap{}
+	metrics.Initializate()
+	var temp1 int64 = 4
+	var temp2 int64 = 56
+	testData := []common.Metrics{
+		{ID: "test1", MType: "counter", Delta: &temp1},
+		{ID: "test2", MType: "counter", Delta: &temp2},
+	}
+	for _, val := range testData {
+		metrics.UpdateCounter(val.ID, common.TypeCounter(*val.Delta*2))
+	}
+	config := Config{PollIntervalSecond: 10, ReportIntervalSecond: 10, RateLimit: 1}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{}`))
+	}))
+	done := make(chan struct{})
+	inp := make(chan []common.Metrics)
+	go workerSendData(config, server.Client(), &metrics, &common.FakeLogger{}, inp, done)
+	inp <- testData
+	time.Sleep(1 * time.Second)
+	close(done)
+}

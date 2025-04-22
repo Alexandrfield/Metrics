@@ -97,8 +97,6 @@ func (st *MemFileStorage) LoadMemStorage(stream io.Reader) {
 	if !st.isCreated {
 		return
 	}
-	st.lock.Lock()
-	defer st.lock.Unlock()
 	data := make([]byte, 1000)
 	for {
 		n, err := stream.Read(data)
@@ -200,8 +198,6 @@ func (st *MemFileStorage) AddMetrics(metrics []common.Metrics) error {
 	if !st.isCreated {
 		return ErrObjectHasbeenClosed
 	}
-	st.lock.Lock()
-	defer st.lock.Unlock()
 	for _, metric := range metrics {
 		switch metric.MType {
 		case typegauge:
