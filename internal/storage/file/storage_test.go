@@ -261,6 +261,7 @@ func TestStorageSaver(t *testing.T) {
 	}()
 	go StorageSaver(stor, 2, done)
 	<-done
+	stor.Close()
 }
 
 func TestStorageSaverFalse(t *testing.T) {

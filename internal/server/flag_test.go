@@ -7,33 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// func TestParseFileError(t *testing.T) {
-// 	os.Clearenv()
-
-// 	var config Config
-// 	err := parseFlags(&config)
-// 	require.NoError(t, err)
-
-// 	if config.DatabaseDsn != "" {
-// 		t.Errorf("DatabaseDsn actual:%s; expected:%s", config.DatabaseDsn, "")
-// 	}
-// 	if config.FileStoregePath != "localStorage.dat" {
-// 		t.Errorf("FileStoregePath actual:%s; expected:%s", config.FileStoregePath, "localStorage.dat")
-// 	}
-// 	if config.ServerAdderess != "localhost:8080" {
-// 		t.Errorf("ServerAdderess actual:%s; expected:%s", config.ServerAdderess, "localhost:8080")
-// 	}
-// 	if string(config.SignKey) != "" {
-// 		t.Errorf("SignKey actual:%s; expected:%s", string(config.SignKey), "")
-// 	}
-// 	if config.StoreIntervalSecond != 300 {
-// 		t.Errorf("StoreIntervalSecond actual:%d; expected:%d", config.StoreIntervalSecond, 300)
-// 	}
-// 	if len(config.CryptoKeySec) != 0 {
-// 		t.Error("expected empty key")
-// 	}
-// }
-
 func TestParseFile(t *testing.T) {
 	os.Clearenv()
 	defer os.Clearenv()

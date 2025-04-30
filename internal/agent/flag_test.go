@@ -7,29 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// func TestParseEmpty(t *testing.T) {
-// 	os.Clearenv()
-// 	defer os.Clearenv()
-// 	var config Config
-// 	err := parseFlags(&config)
-// 	require.NoError(t, err)
-
-//		if config.ServerAdderess != "localhost:8080" {
-//			t.Errorf("ServerAdderess actual:%s; expected:%s", config.ServerAdderess, "localhost:8080")
-//		}
-//		if config.PollIntervalSecond != 2 {
-//			t.Errorf("PollIntervalSecond actual:%d; expected:%d", config.PollIntervalSecond, 2)
-//		}
-//		if config.ReportIntervalSecond != 10 {
-//			t.Errorf("ReportIntervalSecond actual:%d; expected:%d", config.ReportIntervalSecond, 10)
-//		}
-//		if config.RateLimit != 1 {
-//			t.Errorf("RateLimit actual:%d; expected:%d", config.RateLimit, 1)
-//		}
-//		if len(config.CryptoKeyOpen) != 0 {
-//			t.Error("expected empty key")
-//		}
-//	}
 func TestParseFile(t *testing.T) {
 	os.Clearenv()
 	defer os.Clearenv()

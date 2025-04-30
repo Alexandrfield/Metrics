@@ -19,9 +19,18 @@ import (
 const typecounter = "counter"
 const typegauge = "gauge"
 
+type dbSql interface {
+	Close() error
+	Begin() (*sql.Tx, error)
+	PingContext(ctx context.Context) error
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 type MemDatabaseStorage struct {
 	Logger      common.Loger
-	db          *sql.DB
+	db          dbSql
 	DatabaseDsn string
 }
 
@@ -88,7 +97,6 @@ func (st *MemDatabaseStorage) exec(ctx context.Context, con databaseDB, query st
 	}
 	return nil
 }
-
 func (st *MemDatabaseStorage) AddGauge(name string, value common.TypeGauge) error {
 	tx, err := st.db.Begin()
 	if err != nil {
@@ -322,6 +330,5 @@ func (st *MemDatabaseStorage) AddMetrics(metrics []common.Metrics) error {
 	if comerr != nil {
 		return fmt.Errorf("error with commit transactiom. err:%w", err)
 	}
-
 	return nil
 }
