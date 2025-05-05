@@ -59,3 +59,16 @@ func TestCheckHashNegativ(t *testing.T) {
 		t.Errorf("Error check hash. expected:false; actual%t", actual)
 	}
 }
+
+func TestCrypto(t *testing.T) {
+	logger := &FakeLogger{}
+	priv, public := GenerateKeyPair(2048, logger)
+	data := []byte{0x74, 0x65, 0x73, 0x74, 0x4b, 0x65, 0x79}
+
+	publicData, _ := PublicKeyToBytes(public)
+	temp := EncryptData(data, publicData, logger)
+
+	privData := PrivateKeyToBytes(priv)
+	tempDecrypt := DecryptData(temp, privData, logger)
+	assert.ElementsMatch(t, tempDecrypt, data)
+}

@@ -2,6 +2,7 @@ package filestorage
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestAddGauge(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	dataTest := []struct {
 		name  string
 		value common.TypeGauge
@@ -42,7 +43,7 @@ func TestAddGauge(t *testing.T) {
 }
 
 func TestAddCounter(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	dataTest := []struct {
 		name  string
 		value common.TypeCounter
@@ -70,7 +71,7 @@ func TestAddCounter(t *testing.T) {
 }
 
 func TestGetGauge(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	dataTest := []struct {
 		name  string
 		value common.TypeGauge
@@ -95,7 +96,7 @@ func TestGetGauge(t *testing.T) {
 	}
 }
 func TestGetCounter(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	dataTest := []struct {
 		name  string
 		value common.TypeCounter
@@ -121,7 +122,7 @@ func TestGetCounter(t *testing.T) {
 }
 
 func TestPingDatabase(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	actual := stor.PingDatabase()
 	if actual {
 		t.Errorf("Wrong result Ping databese. actual:%t; ecpected:false", actual)
@@ -129,7 +130,7 @@ func TestPingDatabase(t *testing.T) {
 }
 
 func TestGetAllMetricName(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	nameGaugeMetrics := []string{"testGauge1", "testGauge2", "testGauge3"}
 	nameCounterMetrics := []string{"testCounter1", "testCounter2", "testCounter3"}
 	for _, val := range nameGaugeMetrics {
@@ -145,7 +146,7 @@ func TestGetAllMetricName(t *testing.T) {
 }
 
 func TestAddMetrics(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	metricsGaugeName := []string{"testGauge1", "testGauge2"}
 	metricsGaugeVal := []float64{6.7, 7.89}
 	metricsCounterName := []string{"testCounter1", "testCounter2"}
@@ -177,7 +178,7 @@ func TestAddMetrics(t *testing.T) {
 	}
 }
 func TestAddMetricsNegativ(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	metricsGaugeVal := 45.78
 	testMetrics := []common.Metrics{
 		{ID: "test", MType: "blblabla", Value: &metricsGaugeVal},
@@ -189,7 +190,7 @@ func TestAddMetricsNegativ(t *testing.T) {
 	}
 }
 func TestSaveMemStorageAndLoad(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	dataTestGauge := []struct {
 		name  string
 		value common.TypeGauge
@@ -224,7 +225,7 @@ func TestSaveMemStorageAndLoad(t *testing.T) {
 	}
 	var b bytes.Buffer
 	stor.saveMemStorage(&b)
-	storNew := NewMemFileStorage(&common.FakeLogger{})
+	storNew := NewMemFileStorage("", &common.FakeLogger{})
 
 	storNew.LoadMemStorage(&b)
 	for _, v := range dataTestGauge {
@@ -252,12 +253,57 @@ func TestSaveMemStorageAndLoad(t *testing.T) {
 }
 
 func TestStorageSaver(t *testing.T) {
-	stor := NewMemFileStorage(&common.FakeLogger{})
+	stor := NewMemFileStorage("", &common.FakeLogger{})
 	done := make(chan struct{})
 	go func() {
 		time.Sleep(3 * time.Second)
 		close(done)
 	}()
-	go StorageSaver(stor, "", 2, done)
+	go StorageSaver(stor, 2, done)
 	<-done
+	stor.Close()
+}
+
+func TestStorageSaverFalse(t *testing.T) {
+	stor := NewMemFileStorage("", &common.FakeLogger{})
+	stor.isCreated = false
+	done := make(chan struct{})
+	go func() {
+		time.Sleep(3 * time.Second)
+		close(done)
+	}()
+	go StorageSaver(stor, 2, done)
+	<-done
+}
+func TestNotCreatedStor(t *testing.T) {
+	stor := NewMemFileStorage("", &common.FakeLogger{})
+	stor.isCreated = false
+	err := stor.AddCounter("test", common.TypeCounter(44))
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	err = stor.AddGauge("test", common.TypeGauge(43.8))
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddGauge eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	_, err = stor.GetCounter("test")
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("GetCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	_, err = stor.GetGauge("test")
+	if !errors.Is(err, ErrObjectHasbeenClosed) {
+		t.Errorf("AddCounter eexpected err:%s; actual err:%s", ErrObjectHasbeenClosed, err)
+		return
+	}
+	t1, t2 := stor.GetAllMetricName()
+	if len(t1) != 0 || len(t2) != 0 {
+		t.Errorf("GetAllMetricName expected len:0; actual len:%d; %d", len(t1), len(t2))
+		return
+	}
+	var b bytes.Buffer
+	stor.saveMemStorage(&b)
+	stor.LoadMemStorage(&b)
 }

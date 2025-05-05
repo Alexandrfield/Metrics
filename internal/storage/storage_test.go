@@ -235,4 +235,5 @@ func TestCreateMemStorageSecond(t *testing.T) {
 	if memStorage == nil {
 		t.Errorf("problem with create db file")
 	}
+	memStorage.Close()
 }

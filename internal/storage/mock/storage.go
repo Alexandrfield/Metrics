@@ -76,6 +76,18 @@ func (mr *MockBasicStorageMockRecorder) AddMetrics(metrics interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetrics", reflect.TypeOf((*MockBasicStorage)(nil).AddMetrics), metrics)
 }
 
+// Close mocks base method.
+func (m *MockBasicStorage) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockBasicStorageMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockBasicStorage)(nil).Close))
+}
+
 // GetAllMetricName mocks base method.
 func (m *MockBasicStorage) GetAllMetricName() ([]string, []string) {
 	m.ctrl.T.Helper()

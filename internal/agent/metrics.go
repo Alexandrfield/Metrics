@@ -116,6 +116,7 @@ func reportMetric(client *http.Client, config Config, metric common.Metrics, log
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", encod)
 	req.Header.Set("Content-Encoding", encod)
+	objMetrics = common.EncryptData(objMetrics, config.CryptoKeyOpen, logger)
 	sig, err := common.Sign(objMetrics, config.SignKey)
 	if err != nil {
 		logger.Warnf("Error sign. err: %s\n", err)
@@ -230,6 +231,7 @@ func sendArrayMetric(client *http.Client, config Config, metrics []common.Metric
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept-Encoding", encod)
 	req.Header.Set("Content-Encoding", encod)
+	objMetrics = common.EncryptData(objMetrics, config.CryptoKeyOpen, logger)
 	sig, err := common.Sign(objMetrics, config.SignKey)
 	if err != nil {
 		logger.Warnf("error sign. err: %s\n", err)

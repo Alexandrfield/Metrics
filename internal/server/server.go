@@ -179,12 +179,27 @@ func WithLogging(logger common.Loger, config *Config, h http.HandlerFunc) http.H
 				lw.WriteHeader(http.StatusBadRequest)
 			}
 		}
-		r.Body = io.NopCloser(bytes.NewBuffer(data))
-
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 		logger.Infof("uri:%s; method:%s; status:%d; size:%d; duration:%s;",
 			uri, method, responseData.status, responseData.size, duration)
 	}
 	return http.HandlerFunc(logFn)
+}
+
+func WithCrypt(logger common.Loger, config *Config, h http.HandlerFunc) http.HandlerFunc {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		data := make([]byte, 10000)
+		n, _ := r.Body.Read(data)
+		data = data[:n]
+		data = common.DecryptData(data, config.CryptoKeySec, logger)
+		r.Body = io.NopCloser(bytes.NewBuffer(data))
+
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(logFn)
+}
+
+func Middleware(logger common.Loger, config *Config, h http.HandlerFunc) http.HandlerFunc {
+	return WithCrypt(logger, config, WithLogging(logger, config, h))
 }
