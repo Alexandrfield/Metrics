@@ -11,6 +11,7 @@ type configJSON struct {
 
 type Config struct {
 	ServerAdderess       string
+	IpAgentAddr          string
 	SignKey              []byte
 	CryptoKeyOpen        []byte
 	PollIntervalSecond   int
