@@ -15,6 +15,7 @@ import (
 
 	_ "net/http/pprof"
 
+	"github.com/Alexandrfield/Metrics/internal/protobufproto"
 	handler "github.com/Alexandrfield/Metrics/internal/requestHandler"
 	"github.com/Alexandrfield/Metrics/internal/server"
 	"github.com/Alexandrfield/Metrics/internal/storage"
@@ -86,6 +87,8 @@ func main() {
 	router.Post(`/update/*`, server.Middleware(logger, &config, servHandler.UpdateValue))
 	router.Post(`/update/`, server.Middleware(logger, &config, servHandler.UpdateJSONValue))
 	router.Post(`/updates/`, server.Middleware(logger, &config, servHandler.UpdatesMetrics))
+
+	go protobufproto.StartGRPCServer(logger, &metricRep)
 
 	defer func() {
 		close(done)

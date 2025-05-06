@@ -1,0 +1,27 @@
+syntax = "proto3";
+package protobufproto;
+option go_package = "proto/protobufproto";
+
+service GRPCMetricsService {
+  rpc Update (RequestMetric) returns (Status);
+  rpc Value (RequestMetric) returns (RequestAnsMetric);
+}
+
+message RequestMetric {
+  int64 Delta = 1;  
+  double Value  = 2;  
+  string ID = 3;  
+  string MType = 4;
+} 
+
+message Status {
+  int32 Status = 1;
+}
+
+message RequestAnsMetric {
+  int32 Status = 1;
+  int64 Delta = 2;  
+  double Value  = 3;  
+  string ID = 4;  
+  string MType = 5;
+} 

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
+	"github.com/Alexandrfield/Metrics/internal/protobufproto"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -79,6 +80,7 @@ func reportMetricWithRetry(client *http.Client, config Config, metric common.Met
 	for _, val := range secondWaitRetry {
 		time.Sleep(time.Duration(val) * time.Second)
 		err = reportMetric(client, config, metric, logger)
+		_ = protobufproto.UpdateMetricGRPC(logger, metric)
 		if !errors.Is(err, syscall.ECONNREFUSED) {
 			if err != nil {
 				logger.Warnf("error report metric. err%s\n ", err)
@@ -170,7 +172,7 @@ func workerSendData(config Config, client *http.Client, metrics *MetricsMap, log
 
 // MetricsWatcher is main function for manage collect and send metrics.
 func MetricsWatcher(config Config, client *http.Client, logger common.Loger, done chan struct{}) {
-	var isBatch = true
+	var isBatch = false
 	tickerPoolInterval := time.NewTicker(time.Duration(config.PollIntervalSecond) * time.Second)
 	tickerReportInterval := time.NewTicker(time.Duration(config.ReportIntervalSecond) * time.Second)
 	metrics := MetricsMap{}
