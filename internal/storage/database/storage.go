@@ -19,7 +19,7 @@ import (
 const typecounter = "counter"
 const typegauge = "gauge"
 
-type dbSql interface {
+type dbSQl interface {
 	Close() error
 	Begin() (*sql.Tx, error)
 	PingContext(ctx context.Context) error
@@ -30,7 +30,7 @@ type dbSql interface {
 
 type MemDatabaseStorage struct {
 	Logger      common.Loger
-	db          dbSql
+	db          dbSQl
 	DatabaseDsn string
 }
 

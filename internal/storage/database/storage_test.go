@@ -178,8 +178,8 @@ func TestExp(t *testing.T) {
 	stor.db.Begin()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	stor.db.QueryContext(ctx, "test", "er")
-	stor.db.QueryRowContext(ctx, "test", "er")
+	_, _ = stor.db.QueryContext(ctx, "test", "er")
+	_ = stor.db.QueryRowContext(ctx, "test", "er")
 	stor.Close()
 }
 
