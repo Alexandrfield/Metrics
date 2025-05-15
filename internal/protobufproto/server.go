@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/Alexandrfield/Metrics/internal/common"
 	pr "github.com/Alexandrfield/Metrics/internal/protobufproto/proto/protobufproto"
@@ -68,6 +69,15 @@ func (g *GRPCServer) Value(ctx context.Context, req *pr.RequestMetric) (*pr.Requ
 	return &sendMetric, nil
 }
 
+func (g *GRPCServer) unaryInterceptor(ctx context.Context, req interface{},
+	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	start := time.Now()
+	ret, err := handler(ctx, req)
+	duration := time.Since(start)
+	g.logger.Infof("duration:%s; err:%s", duration, err)
+	return ret, err
+}
+
 func StartGRPCServer(logger common.Loger, str MetricsStorage) {
 	grpcWorker := GRPCServer{logger: logger, storage: str}
 	listener, err := net.Listen("tcp", ":50051")
@@ -75,7 +85,7 @@ func StartGRPCServer(logger common.Loger, str MetricsStorage) {
 		logger.Fatalf("Error start tcp server for grpc: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(grpcWorker.unaryInterceptor))
 	pr.RegisterGRPCMetricsServiceServer(grpcServer, &grpcWorker)
 
 	logger.Infof("start grpc server.")
