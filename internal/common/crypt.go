@@ -102,7 +102,7 @@ func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	return key, nil
 }
 func EncryptData(msg []byte, key []byte, logger Loger) []byte {
-	var res []byte = msg
+	res := msg
 	if len(msg) > 0 && len(key) > 0 {
 		pybKey, err := BytesToPublicKey(key)
 		if err != nil {
@@ -119,7 +119,7 @@ func EncryptData(msg []byte, key []byte, logger Loger) []byte {
 	return res
 }
 func DecryptData(msg []byte, key []byte, logger Loger) []byte {
-	var res []byte = msg
+	res := msg
 	if len(msg) > 0 && len(key) > 0 {
 		privKey, err := BytesToPrivateKey(key)
 		if err != nil {

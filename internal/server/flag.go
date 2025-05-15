@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"time"
@@ -19,6 +20,7 @@ func parseFlags(config *Config) error {
 	var storeIntervalSecondTemp int
 	var pathToKeyTemp string
 	var pathToConfigFile string
+	var trustedSubnet string
 	flag.StringVar(&pathToConfigFile, "config", "",
 		"path to config file")
 	flag.StringVar(&serverAdderessTemp, "a", "localhost:8080",
@@ -35,6 +37,8 @@ func parseFlags(config *Config) error {
 		"bool param if we need read exists file with  metrics [default:true]")
 	flag.StringVar(&pathToKeyTemp, "crypto-key", "",
 		"path to crypto key")
+	flag.StringVar(&trustedSubnet, "t", "",
+		"tusted addreses")
 	flag.Parse()
 
 	if envPathToConfigFile, ok := os.LookupEnv("CONFIG"); ok {
@@ -100,6 +104,12 @@ func parseFlags(config *Config) error {
 	}
 	if pathToKeyTemp != "" {
 		config.CryptoKeySec = common.GetDataFromFile(pathToKeyTemp)
+	}
+	if envTrustedSubnet, ok := os.LookupEnv("TRUSTED_SUBNET"); ok {
+		trustedSubnet = envTrustedSubnet
+	}
+	if trustedSubnet != "" {
+		_, config.trustedSubnet, _ = net.ParseCIDR(trustedSubnet)
 	}
 	return nil
 }
