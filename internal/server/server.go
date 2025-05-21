@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -200,6 +201,18 @@ func WithCrypt(logger common.Loger, config *Config, h http.HandlerFunc) http.Han
 	return http.HandlerFunc(logFn)
 }
 
+func CheckSubnet(logger common.Loger, config *Config, h http.HandlerFunc) http.HandlerFunc {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
+		ipStr := r.Header.Get("X-Real-IP")
+		ip := net.ParseIP(ipStr)
+		if !config.IsAllowedAddres(ip) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+	}
+	return http.HandlerFunc(logFn)
+}
+
 func Middleware(logger common.Loger, config *Config, h http.HandlerFunc) http.HandlerFunc {
-	return WithCrypt(logger, config, WithLogging(logger, config, h))
+	return CheckSubnet(logger, config, WithCrypt(logger, config, WithLogging(logger, config, h)))
 }

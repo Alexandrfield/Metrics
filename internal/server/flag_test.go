@@ -48,9 +48,9 @@ func TestParseFile(t *testing.T) {
 }
 
 func TestParseJSONFile(t *testing.T) {
-	var data string = `{"address":"localhost:8080","restore":true,"store_interval":"1s","store_file":"/path/to/file.db",
+	data := `{"address":"localhost:8080","restore":true,"store_interval":"1s","store_file":"/path/to/file.db",
 	"database_dsn":"","crypto_key":"/path/to/key.pem"}`
-	var conf *Config = parseJson([]byte(data))
+	conf := parseJson([]byte(data))
 	if conf == nil {
 		t.Error("config nil!")
 		return

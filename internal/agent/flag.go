@@ -134,5 +134,6 @@ func GetAgentConfig() (Config, error) {
 	if err != nil {
 		return config, fmt.Errorf("GetAgentConfig err:%w", err)
 	}
+	config.IpAgentAddr = "192.168.2.1"
 	return config, nil
 }
